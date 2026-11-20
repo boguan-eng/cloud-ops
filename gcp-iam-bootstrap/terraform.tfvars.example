@@ -1,0 +1,51 @@
+# Copy to terraform.tfvars (git-ignored) and fill in real values.
+# All values below are FAKE placeholders.
+
+org_id          = "123456789012"
+billing_account = "000000-000000-000000"
+prefix          = "acme"
+
+# Only set when the derived project ID (<prefix>-app-<env>) is taken globally.
+# project_id_suffix = "-x1"
+
+group_admins     = "acme-gcp-admins@googlegroups.com"
+group_devops     = "acme-gcp-devops@googlegroups.com"
+group_developers = "acme-gcp-developers@googlegroups.com"
+
+# ---------------------------------------------------------------------------
+# Optional overrides. Defaults live in variables.tf. Uncomment to override;
+# an override REPLACES the whole default list (list every role you want to keep).
+# ---------------------------------------------------------------------------
+
+# admin_org_roles = [
+#   "roles/resourcemanager.organizationAdmin",
+#   "roles/billing.admin",
+#   "roles/resourcemanager.folderAdmin",
+#   "roles/resourcemanager.projectCreator",
+# ]
+
+# devops_roles = [               # prod + nonprod folders
+#   "roles/compute.admin",
+#   "roles/container.admin",     # GKE: remove if not used
+#   "roles/run.admin",
+#   "roles/dns.admin",
+#   "roles/cloudsql.admin",
+#   "roles/storage.admin",
+#   "roles/artifactregistry.admin",
+#   "roles/secretmanager.admin",
+#   "roles/iam.serviceAccountAdmin",
+#   "roles/iam.serviceAccountUser",
+#   "roles/logging.admin",
+#   "roles/monitoring.admin",
+#   "roles/serviceusage.serviceUsageAdmin",
+# ]
+
+# devops_nonprod_extra_roles = ["roles/resourcemanager.projectIamAdmin"]   # nonprod folder only
+
+# developer_roles = [            # prod + nonprod folders
+#   "roles/logging.viewer",
+#   "roles/monitoring.viewer",
+#   "roles/serviceusage.serviceUsageConsumer",
+# ]
+
+# project_services = ["logging.googleapis.com", "monitoring.googleapis.com"]
