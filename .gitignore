@@ -1,0 +1,23 @@
+# Environment-specific config (org ID, billing account, groups, ...)
+*.tfvars
+!*.tfvars.example
+
+# OpenTofu / Terraform state and runtime
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+crash.*.log
+*.tfplan
+
+# Secrets and keys
+.env
+*.pem
+*.key
+
+# GCP credentials (service account keys, ADC)
+*credentials*.json
+*-key.json
+application_default_credentials.json
+
+# NOTE: .terraform.lock.hcl is intentionally NOT ignored (provider lock is tracked).
