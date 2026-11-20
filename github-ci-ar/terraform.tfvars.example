@@ -1,0 +1,15 @@
+# Copy to terraform.tfvars (git-ignored) and fill in real values. Values below are FAKE.
+nonprod_project_id = "acme-app-nonprod"
+prod_project_id    = "acme-app-prod"
+region             = "us-central1"
+
+# From `tofu output wif_pool` in github-ci-wif (handed over by the org admin).
+wif_pool = {
+  nonprod = "projects/123456789/locations/global/workloadIdentityPools/github"
+  prod    = "projects/987654321/locations/global/workloadIdentityPools/github"
+}
+
+# GitHub repo name => numeric repo ID
+repos = {
+  demo-api = "111111111"
+}

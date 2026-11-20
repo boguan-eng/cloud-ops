@@ -15,9 +15,16 @@ crash.*.log
 *.pem
 *.key
 
+# Remote-state backend config (bucket name); only the example is tracked
+backend.hcl
+!backend.hcl.example
+
 # GCP credentials (service account keys, ADC)
 *credentials*.json
 *-key.json
 application_default_credentials.json
 
 # NOTE: .terraform.lock.hcl is intentionally NOT ignored (provider lock is tracked).
+
+# Local app repos (each is its own git repo, pushed separately)
+apps/

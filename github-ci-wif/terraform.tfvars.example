@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars (git-ignored) and fill in real values. Values below are FAKE.
+nonprod_project_id = "acme-app-nonprod"
+prod_project_id    = "acme-app-prod"
+github_org_id      = "12345678"
