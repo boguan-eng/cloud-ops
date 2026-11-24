@@ -10,9 +10,13 @@ infrastructure changes reach GCP.
 | Branch, commit, push, open PR | Author | a `devops` team member |
 | Review and approve on GitHub | Reviewer | a **different** `devops` member (GitHub forbids approving your own PR) |
 | Merge | Author or reviewer | `devops` member |
-| Approve the apply build in GCP | Approver | account in `approver_principals` (Cloud Build Approver) |
+| Approve the apply build in GCP | Approver | member of the approvers group ([approve-apply.md](approve-apply.md)) |
 
-**Prerequisites:** both GitHub accounts are in the `devops` team (Write) and have 2FA.
+**Prerequisites:** both GitHub accounts are in the `devops` team (Write) and have 2FA, and
+both have GitHub **Settings → Emails → Keep my email addresses private** and **Block command
+line pushes that expose my email** on. A merge in the web UI is authored by the merging
+account; without the private setting its real email becomes public in `main`'s history.
+Local commits must use the `…@users.noreply.github.com` address (`git config user.email`).
 
 ## 1. Author: branch, commit, push
 
@@ -67,7 +71,11 @@ Locally:
 
 ```bash
 git switch main && git pull && git branch -d <type>/<short-name>
+git log -1 --format='%ae | %ce'   # expect: <id>+<login>@users.noreply.github.com | noreply@github.com
 ```
+
+Any other address in the output is a leak of personal data: report it to the Org Owner.
+Pushed history is not rewritten without the Org Owner's explicit decision.
 
 ## 5. Approver: approve the apply (only if stages changed)
 
