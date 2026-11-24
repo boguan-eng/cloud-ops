@@ -11,6 +11,10 @@ prefix          = "acme"
 group_devops     = "acme-gcp-devops@googlegroups.com"
 group_developers = "acme-gcp-developers@googlegroups.com"
 
+# Project-tier IaC service accounts (stage 0 output `service_accounts`).
+iac_project_plan_sa  = "iac-project-plan@acme-iac-seed.iam.gserviceaccount.com"
+iac_project_apply_sa = "iac-project-apply@acme-iac-seed.iam.gserviceaccount.com"
+
 # ---------------------------------------------------------------------------
 # Optional overrides. Defaults live in variables.tf. Uncomment to override;
 # an override REPLACES the whole default list (list every role you want to keep).
@@ -41,3 +45,10 @@ group_developers = "acme-gcp-developers@googlegroups.com"
 # ]
 
 # project_services = ["logging.googleapis.com", "monitoring.googleapis.com"]
+
+# iac_project_plan_roles  = ["roles/viewer", "roles/iam.securityReviewer"]   # project-tier plan SA
+# iac_project_apply_roles = [                                                # project-tier apply SA
+#   "roles/iam.workloadIdentityPoolAdmin",
+#   "roles/artifactregistry.admin",
+#   "roles/serviceusage.serviceUsageAdmin",
+# ]
