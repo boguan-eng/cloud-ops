@@ -1,0 +1,30 @@
+# Shared plan build (PR trigger). Substitutions come from the trigger (see
+# stages/0-bootstrap/cicd.tf): _STAGE_DIR, _STAGE_KEY, _STATE_BUCKET, _BUILDER_IMAGE.
+# - No secrets in substitutions; real tfvars are fetched from the state bucket.
+# - Logs stay in Cloud Logging (CLOUD_LOGGING_ONLY); they are not sent to GitHub.
+# - Plan runs with -lock=false because the plan SA is read-only (cannot write the state lock).
+steps:
+  - id: fetch-tfvars
+    name: ${_BUILDER_IMAGE}
+    entrypoint: gcloud
+    dir: ${_STAGE_DIR}
+    args:
+      - storage
+      - cp
+      - gs://${_STATE_BUCKET}/tfvars/${_STAGE_KEY}/terraform.tfvars
+      - terraform.tfvars
+
+  - id: init
+    name: ${_BUILDER_IMAGE}
+    entrypoint: tofu
+    dir: ${_STAGE_DIR}
+    args: [init, -input=false, "-backend-config=bucket=${_STATE_BUCKET}"]
+
+  - id: plan
+    name: ${_BUILDER_IMAGE}
+    entrypoint: tofu
+    dir: ${_STAGE_DIR}
+    args: [plan, -input=false, -lock=false, -no-color]
+
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -1,0 +1,30 @@
+# Copy to terraform.tfvars (git-ignored) and fill in real values.
+# All values below are FAKE placeholders.
+
+org_id          = "123456789012"
+billing_account = "000000-000000-000000"
+prefix          = "acme"
+
+# Only set when the derived seed project ID (<prefix>-iac-seed) is taken globally.
+# seed_project_id_suffix = "-x1"
+
+# region = "us-central1"
+
+# Globally unique.
+state_bucket_name = "acme-iac-tfstate"
+
+devops_principal    = "group:acme-gcp-devops@googlegroups.com"
+approver_principals = ["user:owner@example.com"]
+
+# Normally the Org Owner user(s) only.
+trigger_admin_principals = ["user:owner@example.com"]
+
+# ---------------------------------------------------------------------------
+# GitHub part: first apply with enable_github = false; after building/pushing the
+# builder image and creating the GitHub connection in the Console, set true.
+# ---------------------------------------------------------------------------
+enable_github = false
+
+# builder_image          = "us-central1-docker.pkg.dev/acme-iac-seed/iac-builder/tofu-builder:1.13.1"
+# github_connection_name = "github-cloud-ops"
+# github_repo_uri        = "https://github.com/acme/cloud-ops.git"
