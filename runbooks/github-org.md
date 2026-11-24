@@ -1,7 +1,7 @@
 # GitHub Organization — Runbook (org owner)
 
 One-time setup of the GitHub organization used by development teams. Per-repo CI setup is in
-`github-ci-ar/RUNBOOK.md`. Never commit real values (IDs, emails).
+`stages/3-cicd/ar/RUNBOOK.md`. Never commit real values (IDs, emails).
 
 Placeholders: `<ORG>` = GitHub org name.
 
@@ -29,12 +29,12 @@ Org → Teams → **New team** (the create page has no member field):
 Add members: team page → **Members** tab → **Add a member** → username → Enter →
 **Add `<user>` to `<team>`**. Add yourself to `devops` if you approve prod promotions.
 
-Repo access is granted per repo when onboarding (see `github-ci-ar/RUNBOOK.md`):
+Repo access is granted per repo when onboarding (see `stages/3-cicd/ar/RUNBOOK.md`):
 `developers` = **Write**, `devops` = **Maintain**.
 
 ## 4. Numeric org ID
 
-Needed by the org admin for `github-ci-wif/terraform.tfvars` (`github_org_id`):
+Needed by the org admin for `stages/3-cicd/wif/terraform.tfvars` (`github_org_id`):
 
 ```bash
 curl -s https://api.github.com/orgs/<ORG> | jq .id

@@ -1,8 +1,8 @@
 # GitHub CI → Artifact Registry — Runbook (devops)
 
 Per-repo setup so a GitHub repo's Actions can push images to nonprod AR (on `main`) and
-promote them to prod AR (on `v*` tags). Prerequisites: GitHub org (`github-org/RUNBOOK.md`)
-and WIF pools (`github-ci-wif/RUNBOOK.md`, outputs handed over by the admin).
+promote them to prod AR (on `v*` tags). Prerequisites: GitHub org (`runbooks/github-org.md`)
+and WIF pools (`stages/3-cicd/wif/RUNBOOK.md`, outputs handed over by the admin).
 
 Never write real values into tracked files. Session variables only:
 
@@ -30,7 +30,7 @@ gcloud storage buckets update "gs://$STATE_BUCKET" --versioning --account="$DEVO
 ## 2. First apply
 
 ```bash
-cd github-ci-ar
+cd stages/3-cicd/ar
 cp backend.hcl.example backend.hcl             # bucket = "$STATE_BUCKET"; git-ignored
 cp terraform.tfvars.example terraform.tfvars   # projects, wif_pool (from admin), repos; git-ignored
 export GOOGLE_OAUTH_ACCESS_TOKEN=$(gcloud auth print-access-token --account="$DEVOPS_ACCOUNT")

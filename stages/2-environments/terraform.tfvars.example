@@ -8,7 +8,6 @@ prefix          = "acme"
 # Only set when the derived project ID (<prefix>-app-<env>) is taken globally.
 # project_id_suffix = "-x1"
 
-group_admins     = "acme-gcp-admins@googlegroups.com"
 group_devops     = "acme-gcp-devops@googlegroups.com"
 group_developers = "acme-gcp-developers@googlegroups.com"
 
@@ -16,13 +15,6 @@ group_developers = "acme-gcp-developers@googlegroups.com"
 # Optional overrides. Defaults live in variables.tf. Uncomment to override;
 # an override REPLACES the whole default list (list every role you want to keep).
 # ---------------------------------------------------------------------------
-
-# admin_org_roles = [
-#   "roles/resourcemanager.organizationAdmin",
-#   "roles/billing.admin",
-#   "roles/resourcemanager.folderAdmin",
-#   "roles/resourcemanager.projectCreator",
-# ]
 
 # devops_roles = [               # prod + nonprod folders
 #   "roles/compute.admin",

@@ -1,13 +1,13 @@
 # GitHub CI → Artifact Registry — Tasks
 
-Design: `docs/github-ci-ar-design.md`
+Design: `stages/3-cicd/github-ci-ar-design.md`
 
 | # | Owner | Work | Acceptance | Depends |
 |---|---|---|---|---|
 | T1 | user | Create GitHub org + repos `demo-api`, `demo-web` (public, empty); admin `gcloud auth login` + `gcloud auth application-default login`; give push URLs | org/repo numeric IDs readable via GitHub API | — |
-| T2 | main agent | Write runbooks `github-org/`, `github-ci-wif/`, `github-ci-ar/RUNBOOK.md` | user completes teams, rulesets, environments, secrets | T3 outputs for secret values |
-| T3 | subagent | `github-ci-ar/` tofu module + `terraform.tfvars.example` | V0 (validate; no env values in files) | — |
-| T3b | subagent | Split into `github-ci-wif/` (admin, local state) + `github-ci-ar/` (devops, GCS backend); RUNBOOK | V0 for both | T3 |
+| T2 | main agent | Write runbooks `runbooks/github-org.md`, `stages/3-cicd/wif/`, `stages/3-cicd/ar/RUNBOOK.md` | user completes teams, rulesets, environments, secrets | T3 outputs for secret values |
+| T3 | subagent | `stages/3-cicd/ar/` tofu module + `terraform.tfvars.example` | V0 (validate; no env values in files) | — |
+| T3b | subagent | Split into `stages/3-cicd/wif/` (admin, local state) + `stages/3-cicd/ar/` (devops, GCS backend); RUNBOOK | V0 for both | T3 |
 | T4 | subagent | `apps/demo-api`, `apps/demo-web` (Dockerfiles, `ci.yml`) | local `docker build` of every image passes; no hard-coded GCP values; actions pinned by SHA | — |
 | T5 | main + user | admin: plan/apply `github-ci-wif`; devops: create state bucket, plan/apply `github-ci-ar` with demo-api only (V0); set secrets; push demo-api; tag | V1, V2, V3, V5, V6, V7. Direct WIF failure → fallback task to subagent | T1–T4 |
 | T6 | main + user | demo-web: push before onboarding (denied), add to `repos`, apply, re-run | V4 | T5 |
@@ -28,7 +28,7 @@ No environment values here (IDs, project numbers, emails stay in git-ignored tfv
 | Step | Who / identity | What was done | Evidence |
 |---|---|---|---|
 | T1 | user (GitHub UI) | Created org (Free), public empty repos `demo-api`, `demo-web`; org Actions settings; teams `developers`, `devops`; added self to `devops` via team page → Members → Add a member | GitHub API: org + repos exist, public, owner = org |
-| T3/T3b | subagent | Modules `github-ci-wif/`, `github-ci-ar/`, RUNBOOK | `tofu validate` both OK; grep no env values |
+| T3/T3b | subagent | Modules `stages/3-cicd/wif/`, `stages/3-cicd/ar/`, RUNBOOK | `tofu validate` both OK; grep no env values |
 | T4 | subagent | `apps/demo-api`, `apps/demo-web` | local build/run OK; actionlint clean; pins verified by `git ls-remote` |
 | T5a | agent, admin account (short-lived token) | `tofu apply` `github-ci-wif` | plan 10 add / 0 change / 0 destroy; state 10 resources |
 | T5b | agent, devops account | Created state bucket in nonprod project (us-central1, UBLA, PAP enforced, versioning) | `gcloud storage buckets describe` |

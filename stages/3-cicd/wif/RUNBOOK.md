@@ -4,7 +4,7 @@ Creates one Workload Identity Federation pool + GitHub OIDC provider per env pro
 (nonprod, prod). Trust rules: only the GitHub org's numeric ID; nonprod = Environment
 `nonprod` on `refs/heads/main`; prod = Environment `prod` on `refs/tags/v*`.
 Changes here are rare (trust rule changes only). Repo onboarding does NOT need admin;
-it is done by devops in `github-ci-ar/RUNBOOK.md`.
+it is done by devops in `stages/3-cicd/ar/RUNBOOK.md`.
 
 Never write real values into tracked files. Session variables only:
 
@@ -16,10 +16,10 @@ Authentication: no ADC file. tofu uses a short-lived token (about 1 hour; re-exp
 
 ## Apply
 
-Prerequisite: GitHub org numeric ID (`github-org/RUNBOOK.md` step 4).
+Prerequisite: GitHub org numeric ID (`runbooks/github-org.md` step 4).
 
 ```bash
-cd github-ci-wif
+cd stages/3-cicd/wif
 cp terraform.tfvars.example terraform.tfvars   # real values; git-ignored
 export GOOGLE_OAUTH_ACCESS_TOKEN=$(gcloud auth print-access-token --account="$ADMIN_ACCOUNT")
 tofu init

@@ -21,14 +21,6 @@ locals {
   }
 }
 
-# admins: org-level roles (organizationAdmin, billing.admin, folderAdmin, projectCreator)
-resource "google_organization_iam_member" "admins" {
-  for_each = toset(var.admin_org_roles)
-  org_id   = var.org_id
-  role     = each.key
-  member   = "group:${var.group_admins}"
-}
-
 # devops: prod + nonprod folders
 resource "google_folder_iam_member" "devops" {
   for_each = local.devops_folder_roles

@@ -1,6 +1,6 @@
 # GitHub CI → Artifact Registry — Requirements
 
-Related: `docs/gcp-iam-bootstrap-requirements.md` (org, folders, `<PREFIX>-app-{prod,nonprod}` projects, groups).
+Related: `stages/2-environments/gcp-iam-bootstrap-requirements.md` (org, folders, `<PREFIX>-app-{prod,nonprod}` projects, groups).
 
 ## Goal
 

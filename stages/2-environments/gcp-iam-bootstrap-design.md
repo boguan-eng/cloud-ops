@@ -1,6 +1,6 @@
 # GCP IAM Bootstrap — Design
 
-Requirements: `docs/gcp-iam-bootstrap-requirements.md`
+Requirements: `stages/2-environments/gcp-iam-bootstrap-requirements.md`
 
 ## Tooling
 
@@ -12,7 +12,7 @@ Requirements: `docs/gcp-iam-bootstrap-requirements.md`
 ## Layout
 
 ```
-gcp-iam-bootstrap/
+stages/2-environments/
 ├─ versions.tf               # tofu + provider versions
 ├─ variables.tf              # inputs (no defaults for env-specific values)
 ├─ main.tf                   # folders, projects, billing link
@@ -77,6 +77,6 @@ cannot create folders/projects.
 
 ## Re-use
 
-All commands are recorded in `gcp-iam-bootstrap/RUNBOOK.md` with shell variables
+All commands are recorded in `stages/2-environments/RUNBOOK.md` with shell variables
 (`ORG_ID`, `BILLING_ACCOUNT`, `ADMIN_ACCOUNT`, `PREFIX`, group emails). To apply to another
 org: create groups, fill `terraform.tfvars`, follow the runbook from the top.

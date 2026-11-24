@@ -1,6 +1,6 @@
 # GitHub CI → Artifact Registry — Design
 
-Requirements: `docs/github-ci-ar-requirements.md`
+Requirements: `stages/3-cicd/github-ci-ar-requirements.md`
 
 ## 1. GCP: two OpenTofu root modules
 
@@ -8,15 +8,15 @@ Split by who applies and how often. Project IDs are inputs (no cross-state reads
 
 | Module | Applied by | Changes | State |
 |---|---|---|---|
-| `github-ci-wif/` | org admin | rarely (trust rules) | local, git-ignored |
-| `github-ci-ar/` | devops | each repo onboarding | GCS backend (shared by devops members) |
+| `stages/3-cicd/wif/` | org admin | rarely (trust rules) | local, git-ignored |
+| `stages/3-cicd/ar/` | devops | each repo onboarding | GCS backend (shared by devops members) |
 
 Why split: devops cannot read WIF pools (verified: `workloadIdentityPools.list` denied), so a
 single state would force admin for every onboarding. devops already holds
 `artifactregistry.admin` (incl. `repositories.create`, `setIamPolicy`, verified), so
 onboarding by devops grants it nothing new.
 
-### 1a. `github-ci-wif/` (admin)
+### 1a. `stages/3-cicd/wif/` (admin)
 
 Inputs: `nonprod_project_id`, `prod_project_id`, `github_org_id` (numeric).
 
@@ -35,7 +35,7 @@ Per env in `{nonprod, prod}`:
 Outputs (handed to devops, not committed): `wif_pool` (env => pool resource name),
 `wif_provider` (env => provider resource name).
 
-### 1b. `github-ci-ar/` (devops)
+### 1b. `stages/3-cicd/ar/` (devops)
 
 Inputs: `nonprod_project_id`, `prod_project_id`, `region` (default `us-central1`),
 `wif_pool` (map: nonprod/prod => pool resource name from 1a),
@@ -112,11 +112,11 @@ Permanent runbooks (next to the code, by operator role):
 
 | Runbook | Operator | Content |
 |---|---|---|
-| `github-org/RUNBOOK.md` | GitHub org owner | org, Actions settings, teams, org ID |
-| `github-ci-wif/RUNBOOK.md` | GCP org admin | WIF pools/providers, output hand-off |
-| `github-ci-ar/RUNBOOK.md` | devops | state bucket, AR apply, repo onboarding (GCP + GitHub environments/secrets/rulesets), release |
+| `runbooks/github-org.md` | GitHub org owner | org, Actions settings, teams, org ID |
+| `stages/3-cicd/wif/RUNBOOK.md` | GCP org admin | WIF pools/providers, output hand-off |
+| `stages/3-cicd/ar/RUNBOOK.md` | devops | state bucket, AR apply, repo onboarding (GCP + GitHub environments/secrets/rulesets), release |
 
-`docs/` holds only this implementation's requirements/design/tasks.
+`stages/3-cicd/` holds only this implementation's requirements/design/tasks.
 
 ## 4. Fallback (only if spike fails)
 
@@ -130,8 +130,8 @@ Admin is used only where required; everything else uses role accounts.
 
 | Operation | Identity | Reason |
 |---|---|---|
-| `tofu apply` `github-ci-wif/` | org admin | devops lacks `workloadIdentityPoolAdmin` by design (pool decides who can write prod) |
-| `tofu apply` `github-ci-ar/` (onboarding) | devops group member | `artifactregistry.admin` on both folders; no new privilege |
+| `tofu apply` `stages/3-cicd/wif/` | org admin | devops lacks `workloadIdentityPoolAdmin` by design (pool decides who can write prod) |
+| `tofu apply` `stages/3-cicd/ar/` (onboarding) | devops group member | `artifactregistry.admin` on both folders; no new privilege |
 | Read AR images / digests during verification | devops group member | `artifactregistry.admin` on both folders |
 | Push / promote images | CI (WIF) | no human identity |
 

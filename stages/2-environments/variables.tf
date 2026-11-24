@@ -24,11 +24,6 @@ variable "project_id_suffix" {
   default     = ""
 }
 
-variable "group_admins" {
-  description = "Email of the admins Google Group, e.g. <prefix>-gcp-admins@googlegroups.com."
-  type        = string
-}
-
 variable "group_devops" {
   description = "Email of the devops Google Group."
   type        = string
@@ -37,17 +32,6 @@ variable "group_devops" {
 variable "group_developers" {
   description = "Email of the developers Google Group."
   type        = string
-}
-
-variable "admin_org_roles" {
-  description = "Org-level roles granted to group_admins."
-  type        = list(string)
-  default = [
-    "roles/resourcemanager.organizationAdmin",
-    "roles/billing.admin",
-    "roles/resourcemanager.folderAdmin",
-    "roles/resourcemanager.projectCreator",
-  ]
 }
 
 variable "devops_roles" {

@@ -1,7 +1,9 @@
 # GCP IAM Bootstrap — Runbook
 
+> Legacy runbook (pre-split). Org-level admins IAM now lives in stages/1-org; to be rewritten in T8.
+
 Re-usable for any GCP organization. Run from the repo root unless noted.
-Design: `docs/gcp-iam-bootstrap-design.md`.
+Design: `stages/2-environments/gcp-iam-bootstrap-design.md`.
 
 ## 0. Variables (fill per org; never commit real values)
 
@@ -46,7 +48,7 @@ gcloud organizations add-iam-policy-binding "$ORG_ID" --account="$ADMIN_ACCOUNT"
 ## 2. Apply
 
 ```bash
-cd gcp-iam-bootstrap
+cd stages/2-environments
 cp terraform.tfvars.example terraform.tfvars      # edit with real values (git-ignored)
 tofu init -input=false
 tofu plan -out=bootstrap.tfplan                   # expect: only "to add", 0 change, 0 destroy
@@ -64,7 +66,7 @@ uncomment, and edit. An override replaces the whole default list.
 Example: devops does not need GKE → set `devops_roles` without `"roles/container.admin"`.
 
 ```bash
-cd gcp-iam-bootstrap
+cd stages/2-environments
 tofu plan -out=change.tfplan      # check: only the intended IAM members are added/destroyed
 tofu apply change.tfplan
 rm -f change.tfplan
@@ -81,7 +83,7 @@ gcloud organizations get-iam-policy "$ORG_ID" --account="$ADMIN_ACCOUNT" \
   --flatten=bindings --filter="bindings.members:group:$G_ADMINS" --format="value(bindings.role)"
 
 for ENV in prod nonprod; do
-  FOLDER=$(cd gcp-iam-bootstrap && tofu output -json folder_ids | jq -r ".$ENV")
+  FOLDER=$(cd stages/2-environments && tofu output -json folder_ids | jq -r ".$ENV")
   echo "== $ENV ($FOLDER)"
   gcloud resource-manager folders get-iam-policy "$FOLDER" --account="$ADMIN_ACCOUNT" \
     --flatten=bindings --format="table(bindings.role,bindings.members)"
@@ -148,8 +150,8 @@ for P in $P_PROD $P_NONPROD; do
   gcloud services disable pubsub.googleapis.com --project=$P --account=$ADMIN_ACCOUNT --quiet
 done
 # Remove TEST_ACCOUNT from all groups (groups.google.com). Then confirm no drift:
-(cd gcp-iam-bootstrap && tofu plan -detailed-exitcode)   # exit 0 = no changes
-rm -f gcp-iam-bootstrap/*.tfplan
+(cd stages/2-environments && tofu plan -detailed-exitcode)   # exit 0 = no changes
+rm -f stages/2-environments/*.tfplan
 ```
 
 ### Pitfalls found
