@@ -8,9 +8,9 @@ terraform {
     }
   }
 
-  # Bucket is supplied at init: tofu init -backend-config=backend.hcl
+  # Bucket is supplied via -backend-config (pipeline: stages/cloudbuild/*.yaml; local: backend.hcl).
   backend "gcs" {
-    prefix = "github-ci-ar"
+    prefix = "tfstate/3-cicd-ar"
   }
 }
 

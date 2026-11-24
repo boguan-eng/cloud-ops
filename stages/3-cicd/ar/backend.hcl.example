@@ -1,2 +1,2 @@
 # Copy to backend.hcl (git-ignored). Value below is FAKE.
-bucket = "acme-app-nonprod-tfstate"
+bucket = "acme-iac-tfstate"
