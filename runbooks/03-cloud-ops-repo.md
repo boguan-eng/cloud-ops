@@ -6,7 +6,7 @@ triggers (PR → plan; merge to `main` → apply after approval).
 **Who:** GitHub org **Owner** (browser, sections 1–3 and the browser part of 4) and the GCP
 **Org Owner** (CLI, sections 4–5).
 **Prerequisites:** runbooks 01 and 02 done; variables from runbook 02 section 0.
-**Next:** `04-migrate-stages.md` (task T5).
+**Next:** `04-stages-via-pipeline.md`.
 
 ```bash
 export GITHUB_ORG="acme"           # FAKE
@@ -91,6 +91,23 @@ tofu apply            # expect: 9 to add (repository link + 8 triggers)
 gcloud storage cp terraform.tfvars "gs://${STATE_BUCKET}/tfvars/0-bootstrap/terraform.tfvars"
 ```
 
+## 6. Require the plan checks (GitHub org Owner)
+
+A failed plan must block the merge. Cloud Build reports one check per plan trigger on every
+PR, named `<stage>-plan (<SEED_PROJECT>)`; triggers whose paths the PR does not touch report
+*neutral* ("Changed files did not match file filter"), which counts as passing.
+
+The names appear in the search box only after the triggers have reported once (open any PR).
+Ruleset `protect-main` → check **Require status checks to pass** → **Add checks** → add the
+4 `*-plan` checks, each with source **Google Cloud Build** (not *Any source*: anyone with Write
+could post a fake status with the same name) → **Save changes**.
+
+Keep the list in sync with the triggers:
+- New stage: add its trigger in stage 0 **and** its check here, or its failed plan will not
+  block merges.
+- Renamed or deleted trigger: update the list at the same time, or every PR waits forever on
+  "Expected — Waiting for status".
+
 ## Verification
 
 ```bash
@@ -109,7 +126,8 @@ apply SA. All `logsToGitHub=UNSET` (build logs stay in Cloud Logging).
 
 ```bash
 curl -s "https://api.github.com/repos/${GITHUB_ORG}/cloud-ops/rules/branches/main"
-# expect rule types: deletion, non_fast_forward, pull_request (required_approving_review_count 1)
+# expect rule types: deletion, non_fast_forward, pull_request (required_approving_review_count 1),
+# required_status_checks (4 *-plan contexts, integration_id 10529 = Google Cloud Build)
 ```
 
-**Next:** `04-migrate-stages.md` (task T5).
+**Next:** `04-stages-via-pipeline.md`.
