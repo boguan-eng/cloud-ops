@@ -39,6 +39,19 @@ What happens automatically:
   step `plan` log. Viewing needs Cloud Build Viewer + Logs Viewer (devops, approvers).
 - Docs-only PRs (`runbooks/`, `*.md` outside stage dirs) run no build.
 
+### Public exposure check (every PR with a build)
+
+The repo is public. GitHub checks may show only: status, the seed project ID in the check name
+(accepted), and build/trigger UUIDs. Anything else (plan text, org ID, project number, billing
+account, email) is a leak: stop, and fix before merging.
+
+```bash
+SHA=<head commit of the PR>; FORBIDDEN='<org id>|<project number>|<billing id>|@gmail|google_'
+curl -s "https://api.github.com/repos/<ORG>/cloud-ops/commits/${SHA}/check-runs" \
+  | python3 -c 'import json,sys; [print(c["name"], c["output"]["summary"]) for c in json.load(sys.stdin)["check_runs"]]' \
+  | grep -E "$FORBIDDEN" && echo LEAK || echo OK
+```
+
 ## 3. Reviewer: review and approve (other account)
 
 Sign in to GitHub with the reviewer account → the PR → **Files changed** → read the diff
