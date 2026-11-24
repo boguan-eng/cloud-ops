@@ -1,0 +1,115 @@
+# 03 — cloud-ops Repository and Pipeline
+
+Publishes `cloud-ops`, protects `main`, connects it to Cloud Build and creates the per-stage
+triggers (PR → plan; merge to `main` → apply after approval).
+
+**Who:** GitHub org **Owner** (browser, sections 1–3 and the browser part of 4) and the GCP
+**Org Owner** (CLI, sections 4–5).
+**Prerequisites:** runbooks 01 and 02 done; variables from runbook 02 section 0.
+**Next:** `04-migrate-stages.md` (task T5).
+
+```bash
+export GITHUB_ORG="acme"           # FAKE
+export CONNECTION="github"         # Cloud Build connection name
+```
+
+## 1. Create and push the repository (GitHub org Owner)
+
+1. Org → **New repository** → name `cloud-ops`, **Public**, no README/license.
+   Created private by mistake: repo → **Settings** → **General** → **Danger Zone** →
+   **Change repository visibility** → **Make public**.
+2. Before the first push, run the public-repo checks in `AGENTS.md` (secrets, personal data,
+   real IDs) on the whole history.
+3. Push:
+   ```bash
+   git remote add origin "https://github.com/${GITHUB_ORG}/cloud-ops.git"
+   git push -u origin main          # the branch must be named main (triggers match ^main$)
+   ```
+
+## 2. Repository access (GitHub org Owner)
+
+Repo → **Settings** → left menu *Access* → **Collaborators and teams** → **Add teams** →
+`devops` → role **Write** → **Add selection**. Do not add `developers`.
+
+## 3. Protect `main` (GitHub org Owner)
+
+Repo → **Settings** → **Rules** → **Rulesets** → **New ruleset** → **New branch ruleset**:
+- Name `protect-main`, Enforcement status **Active**, Target branches → **Add target** →
+  **Include default branch**.
+- Check **Restrict deletions**, **Block force pushes**.
+- Check **Require a pull request before merging**: required approvals **1**,
+  **Dismiss stale pull request approvals when new commits are pushed**.
+- Bypass list: **Organization admin** only (break-glass).
+- **Create**.
+
+With a single devops member, the PR author cannot approve their own PR: merging needs another
+member's review or the owner bypass.
+
+## 4. Cloud Build ↔ GitHub connection (GCP Org Owner CLI + GitHub org Owner browser)
+
+Two identities are involved:
+- **GCP side** (CLI): the Org Owner creates the connection in the seed project. Stage 0 already
+  gave the Cloud Build service agent the Secret Manager permission it needs; without it the
+  command fails with "could not assert Secret Manager permissions".
+- **GitHub side** (browser, cannot be scripted): a GitHub org **Owner** authorizes the Cloud
+  Build GitHub App and installs it on the org, **Only select repositories → `cloud-ops`**.
+  The resulting OAuth token is stored in Secret Manager in the seed project and is tied to
+  that GitHub account. Google recommends a shared robot account; if the person leaves or
+  revokes the app, the pipeline stops.
+
+```bash
+gcloud builds connections create github "$CONNECTION" --region="$REGION" --project="$SEED_PROJECT"
+# prints PENDING_USER_OAUTH and a URL
+gcloud builds connections describe "$CONNECTION" --region="$REGION" --project="$SEED_PROJECT" \
+  --format='value(installationState.actionUri)'
+```
+
+Open the URL in a browser: choose the Google account of the Org Owner, then on GitHub
+authorize and install the app as above. The page ends with "Connection configured
+successfully".
+
+```bash
+gcloud builds connections describe "$CONNECTION" --region="$REGION" --project="$SEED_PROJECT" \
+  --format='value(installationState.stage)'      # expect COMPLETE
+```
+
+## 5. Create the triggers (GCP Org Owner)
+
+In `stages/0-bootstrap/terraform.tfvars` set:
+
+```hcl
+enable_github          = true
+builder_image          = "<BUILDER_IMAGE from runbook 02>"
+github_connection_name = "github"
+github_repo_uri        = "https://github.com/<GITHUB_ORG>/cloud-ops.git"
+```
+
+```bash
+cd stages/0-bootstrap
+tofu init -backend-config=backend.hcl
+tofu apply            # expect: 9 to add (repository link + 8 triggers)
+gcloud storage cp terraform.tfvars "gs://${STATE_BUCKET}/tfvars/0-bootstrap/terraform.tfvars"
+```
+
+## Verification
+
+```bash
+gcloud builds triggers list --region="$REGION" --project="$SEED_PROJECT" --format=json | python3 -c '
+import json,sys
+for t in json.load(sys.stdin):
+  r=t.get("repositoryEventConfig",{})
+  print(t["name"], "PR" if "pullRequest" in r else "PUSH",
+        "approval="+str(t.get("approvalConfig",{}).get("approvalRequired",False)),
+        "logsToGitHub="+t.get("includeBuildLogs","UNSET"),
+        t.get("serviceAccount","").split("/")[-1].split("@")[0])'
+```
+
+Expected: 8 triggers. `*-plan`: PR, approval False, plan SA. `*-apply`: PUSH, approval True,
+apply SA. All `logsToGitHub=UNSET` (build logs stay in Cloud Logging).
+
+```bash
+curl -s "https://api.github.com/repos/${GITHUB_ORG}/cloud-ops/rules/branches/main"
+# expect rule types: deletion, non_fast_forward, pull_request (required_approving_review_count 1)
+```
+
+**Next:** `04-migrate-stages.md` (task T5).

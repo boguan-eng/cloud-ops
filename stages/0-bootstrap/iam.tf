@@ -143,6 +143,18 @@ resource "google_project_iam_member" "approver" {
   member  = each.value.member
 }
 
+# Cloud Build service agent: creating the 2nd-gen GitHub connection stores the GitHub OAuth
+# token as a Secret Manager secret in this project; the API requires the agent to have
+# secretmanager.secrets.create and secretmanager.secrets.setIamPolicy (error seen with gcloud;
+# the Console flow grants this automatically). Scoped to the seed project only.
+resource "google_project_iam_member" "cloudbuild_agent_secret_admin" {
+  project = google_project.seed.project_id
+  role    = "roles/secretmanager.admin"
+  member  = "serviceAccount:service-${google_project.seed.number}@gcp-sa-cloudbuild.iam.gserviceaccount.com"
+
+  depends_on = [google_project_service.seed]
+}
+
 # Creating/updating a Cloud Build trigger that runs as a user-specified service account
 # requires iam.serviceAccounts.actAs on that account. Only the trigger admins (normally the
 # Org Owner) get it; devops and approvers cannot run code as the IaC SAs.
