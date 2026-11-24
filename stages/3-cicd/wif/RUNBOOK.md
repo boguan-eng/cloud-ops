@@ -16,7 +16,7 @@ Authentication: no ADC file. tofu uses a short-lived token (about 1 hour; re-exp
 
 ## Apply
 
-Prerequisite: GitHub org numeric ID (`runbooks/github-org.md` step 4).
+Prerequisite: GitHub org numeric ID (`runbooks/01-github-org.md` step 4).
 
 ```bash
 cd stages/3-cicd/wif

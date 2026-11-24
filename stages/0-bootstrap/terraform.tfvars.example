@@ -14,7 +14,8 @@ prefix          = "acme"
 state_bucket_name = "acme-iac-tfstate"
 
 devops_principal    = "group:acme-gcp-devops@googlegroups.com"
-approver_principals = ["user:owner@example.com"]
+# A group, so approvers change by group membership, not by re-applying stage 0.
+approver_principals = ["group:acme-gcp-approvers@googlegroups.com"]
 
 # Normally the Org Owner user(s) only.
 trigger_admin_principals = ["user:owner@example.com"]
