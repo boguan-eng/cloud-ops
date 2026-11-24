@@ -11,5 +11,5 @@ terraform {
 
 # No project set here: auth is via a short-lived access token
 # (GOOGLE_OAUTH_ACCESS_TOKEN). Every resource sets its own project.
-# State is local and git-ignored (applied by the org admin only).
+# State backend: see backend.tf.
 provider "google" {}
