@@ -21,7 +21,7 @@ Never commit real values (IDs, emails); fill them in shell variables or git-igno
 | 04 | `04-migrate-stages.md` (to be written in task T5) | GCP Org Owner | All stages on GCS state; changes go through PR → plan → approval → apply |
 
 After setup, all changes are pull requests to `cloud-ops`:
-[ops/change-via-pr.md](ops/change-via-pr.md) (author, reviewer, merge, apply approval). Per-stage technical details are in
+[ops/change-via-pr.md](ops/change-via-pr.md) (author, reviewer, merge); the approver follows [ops/approve-apply.md](ops/approve-apply.md). Per-stage technical details are in
 `stages/<stage>/RUNBOOK.md`.
 
 ## Roles at a glance

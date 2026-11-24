@@ -39,6 +39,19 @@ What happens automatically:
   step `plan` log. Viewing needs Cloud Build Viewer + Logs Viewer (devops, approvers).
 - Docs-only PRs (`runbooks/`, `*.md` outside stage dirs) run no build.
 
+### Public exposure check (every PR with a build)
+
+The repo is public. GitHub checks may show only: status, the seed project ID in the check name
+(accepted), and build/trigger UUIDs. Anything else (plan text, org ID, project number, billing
+account, email) is a leak: stop, and fix before merging.
+
+```bash
+SHA=<head commit of the PR>; FORBIDDEN='<org id>|<project number>|<billing id>|@gmail|google_'
+curl -s "https://api.github.com/repos/<ORG>/cloud-ops/commits/${SHA}/check-runs" \
+  | python3 -c 'import json,sys; [print(c["name"], c["output"]["summary"]) for c in json.load(sys.stdin)["check_runs"]]' \
+  | grep -E "$FORBIDDEN" && echo LEAK || echo OK
+```
+
 ## 3. Reviewer: review and approve (other account)
 
 Sign in to GitHub with the reviewer account → the PR → **Files changed** → read the diff
@@ -59,10 +72,10 @@ git switch main && git pull && git branch -d <type>/<short-name>
 ## 5. Approver: approve the apply (only if stages changed)
 
 Merging a change under `stages/<stage>/` starts `<stage>-apply`, which waits for approval.
-No notification is configured for pending approvals; the author tells the approver, who checks:
-Console → seed project → **Cloud Build** → **History** → build with status *Awaiting
-approval* → review the plan of the PR → **Approve** (or **Reject**).
-CLI: `gcloud builds approve <BUILD_ID> --region=us-central1 --project=<SEED_PROJECT>`.
+No notification is configured for pending approvals; the author tells the approver, who
+follows [approve-apply.md](approve-apply.md). Write the expected plan summary
+(`Plan: X to add, Y to change, Z to destroy`) in the PR description so the approver can
+compare it.
 
 After the build succeeds, the change is live. Approvals are recorded in the seed project's
 Admin Activity audit log (`ApproveBuild`).

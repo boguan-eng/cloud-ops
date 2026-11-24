@@ -73,3 +73,29 @@ variable "project_services" {
   type        = list(string)
   default     = ["logging.googleapis.com", "monitoring.googleapis.com"]
 }
+
+variable "iac_project_plan_sa" {
+  description = "Email of the project-tier plan IaC service account (from stage 0 output)."
+  type        = string
+}
+
+variable "iac_project_apply_sa" {
+  description = "Email of the project-tier apply IaC service account (from stage 0 output)."
+  type        = string
+}
+
+variable "iac_project_plan_roles" {
+  description = "Folder-level roles granted to the project-tier plan SA on both prod and nonprod folders."
+  type        = list(string)
+  default     = ["roles/viewer", "roles/iam.securityReviewer"]
+}
+
+variable "iac_project_apply_roles" {
+  description = "Folder-level roles granted to the project-tier apply SA on both prod and nonprod folders."
+  type        = list(string)
+  default = [
+    "roles/iam.workloadIdentityPoolAdmin",
+    "roles/artifactregistry.admin",
+    "roles/serviceusage.serviceUsageAdmin",
+  ]
+}

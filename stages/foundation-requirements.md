@@ -89,8 +89,11 @@ cloud-ops/
 
 1. Stage 0 runbook (A and B) exists; after stage 0, no human holds standing org-level write
    roles except Org Owners.
-2. A PR to `cloud-ops` produces a plan in GCP only; nothing environment-specific appears in
-   GitHub.
+2. A PR to `cloud-ops` produces a plan in GCP only. GitHub shows no plan/log content, org ID,
+   billing account, project number or email. Accepted exception (2026-11-24): Cloud Build names
+   its GitHub checks `<trigger> (<seed project ID>)`, so the seed project ID and trigger/build
+   UUIDs are public (not configurable; the ID's prefix equals the public GitHub org name).
+   Every PR is checked for anything beyond this (`runbooks/ops/change-via-pr.md`).
 3. Merge to `main` does not apply until an approver approves; approval is in audit logs.
 4. Restructure and state migration: `tofu plan` shows 0 changes before and after for every stage.
 5. devops cannot modify prod without elevation; with elevation it can; elevation expires.
