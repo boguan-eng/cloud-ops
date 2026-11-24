@@ -21,13 +21,20 @@ Requirements: `stages/foundation-requirements.md`.
 
 | Stage | Content | Applied by | State |
 |---|---|---|---|
-| `0-bootstrap` | seed project, state bucket, builder AR + image, IaC SAs, Cloud Build connection + triggers | Human, once (runbook A or B) | local → migrated to GCS after creation |
+| `0-bootstrap` | seed project, state bucket, builder AR + image, IaC SAs, Cloud Build connection + triggers | Human, once (runbook 02/03) | local → migrated to GCS after creation |
 | `1-org` | org-level IAM, org policies, billing IAM + budget, elevation (PAM or fallback) | pipeline, org tier SA | GCS `tfstate/1-org` |
 | `2-environments` | prod/nonprod folders, projects, folder IAM for groups | pipeline, org tier SA | GCS `tfstate/2-environments` |
 | `3-cicd/wif`, `3-cicd/ar` | GitHub WIF pools, per-repo AR | pipeline, project tier SA | GCS `tfstate/3-cicd-wif`, `tfstate/3-cicd-ar` |
 
-`gcp-iam-bootstrap` is split into `1-org` (org-level IAM) and `2-environments` (folders, projects,
-folder IAM) by copying the local state and `tofu state rm` on each side.
+Rebuild instead of migration (decided 2026-11-24): stages 1–3 were first applied by hand
+before stage 0 existed. Instead of splitting/migrating that state, the pipeline builds stages
+1–3 from zero (this also verifies the documented from-zero path), then the legacy resources are
+deleted. Facts: a deleted project's ID can never be reused (new projects use
+`project_id_suffix`); soft-deleted projects count against project quota for 30 days.
+Order to limit risk: rename legacy folders → pipeline creates new stages → switch demo apps →
+delete legacy projects/folders. If project creation hits quota, nothing legacy is lost yet.
+Stage 2 grants the project-tier IaC SAs their folder roles, so stage 3 needs no human apply.
+One PR per stage, in order (all apply triggers would otherwise start at once).
 
 ## Seed Project
 
