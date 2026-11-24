@@ -21,7 +21,7 @@ Never commit real values (IDs, emails); fill them in shell variables or git-igno
 | 04 | `04-migrate-stages.md` (to be written in task T5) | GCP Org Owner | All stages on GCS state; changes go through PR → plan → approval → apply |
 
 After setup, all changes are pull requests to `cloud-ops`:
-[ops/change-via-pr.md](ops/change-via-pr.md) (author, reviewer, merge); the approver follows [ops/approve-apply.md](ops/approve-apply.md). Per-stage technical details are in
+[ops/change-via-pr.md](ops/change-via-pr.md) (author, reviewer, merge); the approver follows [ops/approve-apply.md](ops/approve-apply.md); approvers are managed by [ops/change-approver.md](ops/change-approver.md). Per-stage technical details are in
 `stages/<stage>/RUNBOOK.md`.
 
 ## Roles at a glance
@@ -29,7 +29,7 @@ After setup, all changes are pull requests to `cloud-ops`:
 | Persona | GitHub | GCP |
 |---|---|---|
 | Org Owner (non-technical, break-glass) | org Owner | Organization Owner; runs/approves stage 0 |
-| Approver (non-technical) | none | Cloud Build Approver on the seed project; PAM approver |
+| Approver (non-technical; member of the approvers group) | none | Cloud Build Approver on the seed project; PAM approver |
 | Billing viewer (non-technical) | none | Billing Account Viewer |
 | devops | `devops` team (Write on `cloud-ops`) | nonprod operate; prod read-only + PAM elevation |
 | developers | `developers` team (app repos) | logs / monitoring / service status, read-only |

@@ -30,7 +30,7 @@ concepts, trade-offs (GCP vs third-party, price, maintenance) and permission mat
 | Persona | Permissions | Usage |
 |---|---|---|
 | Org Owner (non-technical, a) | `cloudowner.admin`; at least 2 owners | Break-glass; may run stage 0 (method A) |
-| Approver (non-technical, b) | Cloud Build Approver on the seed project only | Approves infra apply in the Console |
+| Approver (non-technical, b) | Cloud Build Approver on the seed project only, via the `approvers` group (membership managed by the Org Owner) | Approves infra apply in the Console |
 | Billing viewer (non-technical, c) | `billing.viewer` on the billing account; budget alert recipient | Reads cost |
 | devops | nonprod: operate; prod: read-only by default + just-in-time elevation (mechanism chosen in design after verification) | Infra changes only via PR |
 | developers | existing logs/monitoring read + service-status viewer roles (e.g. Cloud Run, Trace, Error Reporting) | Read-only |

@@ -6,7 +6,8 @@ accounts. Run **once**, by a human. Code: `stages/0-bootstrap/`. Design:
 
 **Who:** method A — the GCP **Org Owner**; method B — a named **devops member** under a
 temporary grant from the Org Owner (sections B1 and B2 wrap the common steps).
-**Prerequisites:** runbook 01 done; Google groups (devops) and approver account exist.
+**Prerequisites:** runbook 01 done; Google groups `<prefix>-gcp-devops` and `<prefix>-gcp-approvers` exist with the settings in
+[ops/change-approver.md](ops/change-approver.md) section 1.
 **Next:** [03-cloud-ops-repo.md](03-cloud-ops-repo.md).
 
 Never commit real values (`terraform.tfvars`, `backend.hcl` are git-ignored).
@@ -67,7 +68,7 @@ gcloud billing accounts get-iam-policy "$BILLING_ACCOUNT" --flatten='bindings[].
 cd cloud-ops/stages/0-bootstrap
 cp terraform.tfvars.example terraform.tfvars
 # Fill: org_id, billing_account, prefix, state_bucket_name, devops_principal ("group:..."),
-# approver_principals (["user:..."]), trigger_admin_principals (["user:<OWNER_USER>"]),
+# approver_principals (["group:<prefix>-gcp-approvers@..."]), trigger_admin_principals (["user:<OWNER_USER>"]),
 # enable_github = false.
 gcloud auth application-default login
 ```
