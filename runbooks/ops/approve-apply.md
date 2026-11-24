@@ -7,6 +7,10 @@
 - **When:** a PR that changes `stages/<stage>/` was merged to `main` and the author tells you
   `<stage>-apply` is waiting.
 - **What you decide:** whether the change shown in the plan may be applied now.
+- **Org Owner approval is break-glass only.** The Org Owner can technically approve any
+  build. Do so only when no approver is available, and write the reason as a PR comment
+  before approving. Review: seed project audit log, method `ApproveBuild` — any principal
+  outside the approvers group must have such a comment.
 
 ## 1. Sign in with the approver account
 

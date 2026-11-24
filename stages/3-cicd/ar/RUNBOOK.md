@@ -1,7 +1,7 @@
 # GitHub CI → Artifact Registry — Runbook (devops)
 
 Per-repo setup so a GitHub repo's Actions can push images to nonprod AR (on `main`) and
-promote them to prod AR (on `v*` tags). Prerequisites: GitHub org (`runbooks/github-org.md`)
+promote them to prod AR (on `v*` tags). Prerequisites: GitHub org (`runbooks/01-github-org.md`)
 and WIF pools (`stages/3-cicd/wif/RUNBOOK.md`, outputs handed over by the admin).
 
 Never write real values into tracked files. Session variables only:
