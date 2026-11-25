@@ -32,7 +32,7 @@ and break-glass. Day-to-day runbooks:
 | [ops/run-checks.md](ops/run-checks.md) | devops (or Org Owner) | Daily/on-demand `<stage>-check` for drift and plan-SA read coverage |
 | [ops/approve-pam-grant.md](ops/approve-pam-grant.md) | devops (requester) + approver | Incident-only prod write elevation (PAM), then reconcile by PR |
 
-Per-stage technical details are in `stages/<stage>/RUNBOOK.md`.
+Per-stage details are in `stages/<stage>/README.md` (stage 3 app setup: `stages/3-cicd/{wif,ar}/RUNBOOK.md`).
 
 ## Roles at a glance
 
