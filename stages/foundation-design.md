@@ -161,7 +161,23 @@ after the test: an approver must not stay in developers). Acceptance 7 by IAM in
 - `runbooks/`: stage-0 method A, method B, elevation, onboarding repo/person, offboarding.
 - `docs/identity-options.md` → placed at `stages/1-org/identity-options.md`: no domain /
   domain + Cloud Identity Free / Workforce Identity Federation.
-- `examples/github-private-pipeline/`: b1, marked unverified.
+- b1 (GitHub Actions, private repo): a paragraph in the README pipeline comparison; no
+  `examples/` code (decided 2026-11-25). No `troubleshoot-pipeline.md`: failures are covered by
+  `run-checks.md`, `change-via-pr.md` and `approve-apply.md`.
+
+## Org Policy Baseline (decided 2026-11-25)
+
+Found (read-only, 2026-11-25): six secure-by-default policies enforced at the org by Google at
+creation (`iam.disableServiceAccountKeyCreation`, `iam.disableServiceAccountKeyUpload`,
+`iam.automaticIamGrantsForDefaultServiceAccounts`, `storage.uniformBucketLevelAccess`,
+`compute.setNewProjectDefaultToZonalDNSOnly`, `compute.restrictProtocolForwardingCreationForTypes`
+= INTERNAL); none on folders or projects. Stage 1 (`org-policy.tf`) imports them, so changes need
+a PR and the daily check detects console edits, and adds `compute.skipDefaultNetworkCreation`,
+`storage.publicAccessPrevention`, `sql.restrictPublicIp`, `compute.requireOsLogin`. Deferred:
+`compute.vmExternalIpAccess` (later chapters), `gcp.resourceLocations` (needs a region plan).
+Not applicable without a domain: `iam.allowedPolicyMemberDomains`. `iac-org-apply` already holds
+`orgpolicy.policyAdmin`, `iac-org-plan` `orgpolicy.policyViewer`. Exceptions are project-level
+policies in the stage that owns the project.
 
 ## Non-functional
 
