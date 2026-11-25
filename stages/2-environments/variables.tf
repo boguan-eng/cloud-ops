@@ -117,3 +117,9 @@ variable "iac_project_apply_roles" {
     "roles/serviceusage.serviceUsageAdmin",
   ]
 }
+
+variable "pam_admin_principals" {
+  description = "Principals (e.g. user:<org-owner-email>) with privilegedaccessmanager.admin on the prod folder, needed to revoke active prod-operator grants. Org Owner only."
+  type        = list(string)
+  default     = []
+}

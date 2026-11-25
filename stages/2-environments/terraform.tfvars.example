@@ -65,3 +65,6 @@ iac_org_apply_sa = "iac-org-apply@acme-iac-seed.iam.gserviceaccount.com"
 #   "roles/artifactregistry.admin",
 #   "roles/serviceusage.serviceUsageAdmin",
 # ]
+
+# Org Owner only: can revoke active PAM grants on the prod folder (pam.tf).
+pam_admin_principals = ["user:owner@example.com"]

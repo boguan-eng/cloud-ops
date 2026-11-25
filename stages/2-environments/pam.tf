@@ -81,3 +81,15 @@ resource "google_folder_iam_member" "approvers_prod_folder_viewer" {
   role   = "roles/resourcemanager.folderViewer"
   member = "group:${var.group_approvers}"
 }
+
+# Who can end an active grant early (revoke). Only roles/privilegedaccessmanager.admin holds
+# privilegedaccessmanager.grants.revoke among predefined roles (found in T7-7: the Org Owner
+# was denied). It can also edit entitlements, so it goes to the Org Owner only (who could grant
+# it to themselves anyway), never to approvers (they could make themselves eligible).
+resource "google_folder_iam_member" "pam_admins_prod" {
+  for_each = toset(var.pam_admin_principals)
+
+  folder = google_folder.env["prod"].name
+  role   = "roles/privilegedaccessmanager.admin"
+  member = each.value
+}
