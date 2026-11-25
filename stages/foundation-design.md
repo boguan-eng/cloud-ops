@@ -55,14 +55,33 @@ Org
 
 | SA | Roles |
 |---|---|
-| iac-org-plan | org: read roles (viewer-level, IAM/org policy/billing read); bucket read |
+| iac-org-plan | org: `viewer`, `resourcemanager.folderViewer`, `iam.securityReviewer`, `orgpolicy.policyViewer`, `privilegedaccessmanager.viewer`; billing: `billing.viewer`; bucket read (see Plan SA Read Coverage) |
 | iac-org-apply | org: folder admin, project creator, org IAM admin, org policy admin; billing account user/costs manager; bucket write |
-| iac-project-plan | prod/nonprod projects: read roles; bucket read |
+| iac-project-plan | prod/nonprod folders: `viewer`, `iam.securityReviewer`; bucket read |
 | iac-project-apply | prod/nonprod projects: WIF pool admin, AR admin, project IAM admin, service usage admin; bucket write |
 
 Seed project IAM (humans): devops = Cloud Build viewer + logging viewer (to read plans);
 approver = Cloud Build approver + viewer; nobody has `actAs` on IaC SAs except via Org Owner.
 Build logs: `CLOUD_LOGGING_ONLY`; `includeBuildLogs` unset (no logs on GitHub).
+
+### Plan SA Read Coverage
+
+A plan refreshes every resource in state, so each plan SA needs read access to every managed
+resource type. Gap found 2026-11-24: org `roles/viewer` lacks `resourcemanager.folders.get`, so
+the first stage 2 change PR failed (the first stage 2 plan only created folders, so nothing was
+read). Role existence was verified in T3, coverage was not; T6 verified zero-diff only as the
+Org Owner, whose access is wider than the plan SA's.
+
+| Stage | Read in plan | Permission source (plan SA) |
+|---|---|---|
+| 1-org | org IAM policy; budgets, notification channels (T7-5) | `iam.securityReviewer`; `billing.viewer`; `monitoring.viewer` on seed |
+| 2-environments | folders; projects + billing info; project services; folder/project IAM; PAM entitlement | `resourcemanager.folderViewer`; `viewer`; `viewer`; `iam.securityReviewer`; `privilegedaccessmanager.viewer` |
+| 3-cicd/wif | project services; WIF pools/providers | folder `viewer` (inherited) |
+| 3-cicd/ar | project services; AR repos + repo IAM | folder `viewer`; `iam.securityReviewer` |
+
+Control: manual `<stage>-check` triggers (stage 0) run `tofu plan -detailed-exitcode` on `main`
+as the plan SA; the build fails on any error or diff. Run each after a stage's first apply
+(runbook 04) and to detect drift. PR plan triggers cannot be run by hand.
 
 ## Pipeline Flow
 
