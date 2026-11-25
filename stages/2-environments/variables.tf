@@ -29,13 +29,18 @@ variable "group_devops" {
   type        = string
 }
 
+variable "group_approvers" {
+  description = "Email of the approvers Google Group (approves PAM prod-operator grant requests)."
+  type        = string
+}
+
 variable "group_developers" {
   description = "Email of the developers Google Group."
   type        = string
 }
 
 variable "devops_roles" {
-  description = "Folder-level roles granted to group_devops on both prod and nonprod folders."
+  description = "Folder-level roles granted to group_devops on the nonprod folder, and the role set of the prod-operator PAM entitlement on the prod folder (temporary, not standing)."
   type        = list(string)
   default = [
     "roles/compute.admin",
@@ -54,10 +59,16 @@ variable "devops_roles" {
   ]
 }
 
+variable "devops_prod_roles" {
+  description = "Standing folder-level roles granted to group_devops on the prod folder. Everything else on prod is via the PAM entitlement."
+  type        = list(string)
+  default     = ["roles/viewer"]
+}
+
 variable "devops_nonprod_extra_roles" {
   description = "Extra folder-level roles granted to group_devops on the nonprod folder only."
   type        = list(string)
-  default     = ["roles/resourcemanager.projectIamAdmin"]
+  default     = ["roles/resourcemanager.projectIamAdmin", "roles/iam.workloadIdentityPoolViewer"]
 }
 
 variable "developer_roles" {
@@ -65,7 +76,14 @@ variable "developer_roles" {
   type        = list(string)
   # serviceUsageConsumer: gcloud sends the current project as quota project by default,
   # which requires serviceusage.services.use (otherwise USER_PROJECT_DENIED).
-  default = ["roles/logging.viewer", "roles/monitoring.viewer", "roles/serviceusage.serviceUsageConsumer"]
+  default = [
+    "roles/logging.viewer",
+    "roles/monitoring.viewer",
+    "roles/serviceusage.serviceUsageConsumer",
+    "roles/run.viewer",
+    "roles/cloudtrace.user", # can edit trace scopes, cannot change traces or services (accepted)
+    "roles/errorreporting.viewer",
+  ]
 }
 
 variable "project_services" {

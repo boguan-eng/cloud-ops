@@ -2,11 +2,18 @@
 # Authoritative IAM resources (full-policy / binding variants) are forbidden here: they overwrite existing bindings.
 
 locals {
-  # devops: devops_roles on prod and nonprod folders. Key: "<env>/<role>"
-  devops_folder_roles = {
-    for p in setproduct(local.envs, toset(var.devops_roles)) :
-    "${p[0]}/${p[1]}" => { env = p[0], role = p[1] }
+  # devops: standing roles per folder. nonprod: devops_roles; prod: devops_prod_roles only
+  # (the full devops_roles set on prod is gated by the PAM entitlement in pam.tf).
+  # Key: "<env>/<role>"
+  devops_env_roles = {
+    nonprod = var.devops_roles
+    prod    = var.devops_prod_roles
   }
+  devops_folder_roles = merge([
+    for env, roles in local.devops_env_roles : {
+      for role in toset(roles) : "${env}/${role}" => { env = env, role = role }
+    }
+  ]...)
 
   # devops: extra roles on nonprod folder only. Key: "nonprod/<role>"
   devops_nonprod_extra = {
@@ -31,7 +38,7 @@ locals {
   }
 }
 
-# devops: prod + nonprod folders
+# devops: nonprod (devops_roles) + prod (devops_prod_roles)
 resource "google_folder_iam_member" "devops" {
   for_each = local.devops_folder_roles
   folder   = google_folder.env[each.value.env].name

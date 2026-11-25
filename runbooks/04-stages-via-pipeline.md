@@ -69,7 +69,16 @@ run_apply 2-environments
 ```
 
 This also grants the project-tier IaC SAs their roles on the env folders, so stage 3 can
-run. If project creation fails on quota: soft-deleted projects count against it for 30 days.
+run, and creates the PAM entitlement `prod-operator` on the prod folder. PAM uses the
+organization-level service agent, which no IaC resource can create; create it once before
+this apply (idempotent; it grants nothing by itself):
+
+```bash
+gcloud beta services identity create --service=privilegedaccessmanager.googleapis.com \
+  --organization="$ORG_ID"
+# expect: Service identity created: service-org-<ORG_ID>@gcp-sa-pam.iam.gserviceaccount.com
+```
+ If project creation fails on quota: soft-deleted projects count against it for 30 days.
 
 ## 3. Stage 3 — WIF pools
 

@@ -22,7 +22,7 @@ Requirements: `stages/foundation-requirements.md`.
 | Stage | Content | Applied by | State |
 |---|---|---|---|
 | `0-bootstrap` | seed project, state bucket, builder AR + image, IaC SAs, Cloud Build connection + triggers | Human, once (runbook 02/03) | local → migrated to GCS after creation |
-| `1-org` | org-level IAM, org policies, billing IAM + budget, elevation (PAM or fallback) | pipeline, org tier SA | GCS `tfstate/1-org` |
+| `1-org` | org-level IAM, org policies, budget + alert channel | pipeline, org tier SA | GCS `tfstate/1-org` |
 | `2-environments` | prod/nonprod folders, projects, folder IAM for groups | pipeline, org tier SA | GCS `tfstate/2-environments` |
 | `3-cicd/wif`, `3-cicd/ar` | GitHub WIF pools, per-repo AR | pipeline, project tier SA | GCS `tfstate/3-cicd-wif`, `tfstate/3-cicd-ar` |
 
@@ -76,16 +76,35 @@ Risk: HCL in a PR can execute code during plan (e.g. `external` data source) wit
 Controls: repo write access = devops only; external PRs need `/gcbrun` by a writer after review;
 plan SAs are read-only.
 
-## Permission Changes (via pipeline, after migration)
+## Permission Changes (T7, decided 2026-11-24)
 
-- devops on prod: viewer; elevation entitlement "prod-operator" (roles from current devops set),
-  requester = devops group, approver = approver persona, max 4h.
-  Mechanism: PAM (T1 passed 2026-11-24). Expiring IAM condition kept only as documented fallback.
-- developers: + `run.viewer`, `cloudtrace.user`, `errorreporting.viewer`.
-- billing viewer: `billing.viewer` on billing account; budget + alert channel by IaC.
-- `admins` group: org roles removed after a second Org Owner exists.
-- Lockout prevention: human permissions are removed only after pipeline zero-diff is verified;
-  Org Owner can always restore Organization Administrator.
+Facts (official docs, 2026-11-24): Organization Owner of a standalone org is added only in the
+Console (Organization details → invite, accept within 30 days); PAM supports org/folder/project
+entitlements, groups as requesters/approvers, 30 min–7 days; the project creator is granted
+`roles/owner` (removed with `google_project_iam_member_remove`); budgets need
+`billing.costsManager` (apply SA has it); email alerts need Monitoring email channels (≤5) in a
+project with `billingbudgets` API on the quota project; billing-account IAM needs
+`billing.admin` (not given to any SA).
+
+| Change | Where | Applied by |
+|---|---|---|
+| Second Org Owner (dedicated break-glass Gmail) | Console | Org Owner (manual) |
+| `<prefix>-gcp-billing` group → `billing.viewer` on the billing account | stage 0 | Org Owner (local) |
+| Seed: enable `billingbudgets`, `monitoring` APIs; `iac-org-apply` → `monitoring.notificationChannelEditor`, `serviceusage.serviceUsageConsumer`; `iac-org-plan` → `monitoring.viewer`, `serviceusage.serviceUsageConsumer` | stage 0 | Org Owner (local) |
+| devops on prod folder: `viewer` only; PAM entitlement `prod-operator` on the prod folder (previous devops role set, max 4h, requester devops group, approver approvers group, justification required); PAM service agent role on the prod folder | stage 2 | pipeline |
+| developers (both folders): + `run.viewer`, `cloudtrace.user` (accepted: can edit trace scopes, cannot change traces or services), `errorreporting.viewer` | stage 2 | pipeline |
+| devops on nonprod: + `iam.workloadIdentityPoolViewer` | stage 2 | pipeline |
+| Remove `roles/owner` of `iac-org-apply` on env projects | stage 2 | pipeline |
+| Budget on the billing account (TWD, alerts 50/90/100 %), email channel to the billing group, channel in the seed project | stage 1 | pipeline |
+| Remove `admins` group org roles (after the second Org Owner accepted) | stage 1 | pipeline |
+
+Kept: the Org Owner user's direct, manually granted org roles (break-glass; Org Owner is
+allowed standing access by acceptance 1). Lockout prevention: the Org Owner can always restore
+Organization Administrator from the Organization details page.
+
+Acceptance 5 uses `selfuse-operator` (devops) with a PAM grant, ended early by revoke.
+Acceptance 6 uses the approver account temporarily added to the developers group (removed
+after the test: an approver must not stay in developers). Acceptance 7 by IAM inspection.
 
 ## Documentation
 
