@@ -1,3 +1,5 @@
+> **Superseded (2026-11-25):** historical record of the pre-restructure work. Current sources: [requirements](../foundation-requirements.md), [design](../foundation-design.md), [tasks](../foundation-tasks.md) and the [stage README](README.md).
+
 # GitHub CI → Artifact Registry — Tasks
 
 Design: `stages/3-cicd/github-ci-ar-design.md`

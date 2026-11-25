@@ -6,7 +6,9 @@ accounts. Run **once**, by a human. Code: `stages/0-bootstrap/`. Design:
 
 **Who:** method A — the GCP **Org Owner**; method B — a named **devops member** under a
 temporary grant from the Org Owner (sections B1 and B2 wrap the common steps).
-**Prerequisites:** runbook 01 done; Google groups `<prefix>-gcp-devops` and `<prefix>-gcp-approvers` exist with the settings in
+**Prerequisites:** runbook 01 done; Google groups `<prefix>-gcp-devops`, `<prefix>-gcp-approvers`,
+`<prefix>-gcp-developers` and `<prefix>-gcp-billing` exist (groups.google.com, created by the Org Owner;
+IAM rejects a group that does not exist, so check each address against the tfvars) with the settings in
 [ops/change-approver.md](ops/change-approver.md) section 1.
 **Next:** [03-cloud-ops-repo.md](03-cloud-ops-repo.md).
 

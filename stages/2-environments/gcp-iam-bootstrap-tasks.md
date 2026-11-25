@@ -1,3 +1,5 @@
+> **Superseded (2026-11-25):** historical record of the pre-restructure work. Current sources: [requirements](../foundation-requirements.md), [design](../foundation-design.md), [tasks](../foundation-tasks.md) and the [stage README](README.md).
+
 # GCP IAM Bootstrap — Tasks
 
 Design: `stages/2-environments/gcp-iam-bootstrap-design.md`
