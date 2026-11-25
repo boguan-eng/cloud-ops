@@ -1,0 +1,33 @@
+# Manual drift/coverage check, run on main as the plan SA (<stage>-check triggers, see
+# stages/0-bootstrap/cicd.tf). Never applies. Substitutions come from the trigger:
+# _STAGE_DIR, _STAGE_KEY, _STATE_BUCKET, _BUILDER_IMAGE.
+# - Same as plan.yaml, but the plan uses -detailed-exitcode: the build FAILS on any diff
+#   (exit 2) or error (exit 1), so a missing plan SA read role or drift is visible.
+# - No secrets in substitutions; real tfvars are fetched from the state bucket.
+# - Logs stay in Cloud Logging (CLOUD_LOGGING_ONLY); they are not sent to GitHub.
+# - Plan runs with -lock=false because the plan SA is read-only (cannot write the state lock).
+steps:
+  - id: fetch-tfvars
+    name: ${_BUILDER_IMAGE}
+    entrypoint: gcloud
+    dir: ${_STAGE_DIR}
+    args:
+      - storage
+      - cp
+      - gs://${_STATE_BUCKET}/tfvars/${_STAGE_KEY}/terraform.tfvars
+      - terraform.tfvars
+
+  - id: init
+    name: ${_BUILDER_IMAGE}
+    entrypoint: tofu
+    dir: ${_STAGE_DIR}
+    args: [init, -input=false, "-backend-config=bucket=${_STATE_BUCKET}"]
+
+  - id: plan
+    name: ${_BUILDER_IMAGE}
+    entrypoint: tofu
+    dir: ${_STAGE_DIR}
+    args: [plan, -input=false, -lock=false, -no-color, -detailed-exitcode]
+
+options:
+  logging: CLOUD_LOGGING_ONLY
