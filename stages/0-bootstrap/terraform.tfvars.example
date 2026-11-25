@@ -17,6 +17,9 @@ devops_principal    = "group:acme-gcp-devops@googlegroups.com"
 # A group, so approvers change by group membership, not by re-applying stage 0.
 approver_principals = ["group:acme-gcp-approvers@googlegroups.com"]
 
+# A group; gets billing.viewer on the billing account (also the budget alert email recipient).
+billing_viewer_principals = ["group:acme-gcp-billing@googlegroups.com"]
+
 # Normally the Org Owner user(s) only.
 trigger_admin_principals = ["user:owner@example.com"]
 

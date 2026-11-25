@@ -45,6 +45,12 @@ variable "approver_principals" {
   type        = list(string)
 }
 
+variable "billing_viewer_principals" {
+  description = "IAM members (with type prefix, normally one group, e.g. 'group:acme-gcp-billing@googlegroups.com') granted roles/billing.viewer on the billing account."
+  type        = list(string)
+  default     = []
+}
+
 variable "trigger_admin_principals" {
   description = "IAM members allowed to actAs the IaC service accounts, which is required to create/update Cloud Build triggers that run as them. Normally the Org Owner user(s) only."
   type        = list(string)
