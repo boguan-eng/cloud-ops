@@ -17,6 +17,7 @@ locals {
     "logging.googleapis.com",
     "monitoring.googleapis.com",
     "storage.googleapis.com",
+    "cloudscheduler.googleapis.com", # scheduled <stage>-check trigger runs (checks.tf)
   ]
 
   # IaC service accounts: key -> account_id. "org" tier runs stages 1-2, "project" tier stage 3.
