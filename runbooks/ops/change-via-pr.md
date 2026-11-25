@@ -62,6 +62,16 @@ Sign in to GitHub with the reviewer account → the PR → **Files changed** →
 (and, for stage changes, the plan in Cloud Build) → **Review changes** → **Approve** →
 **Submit review**.
 
+### Review bypass (decision B)
+
+The ruleset lets an authorized account merge without the required review. Allowed **only**:
+- for a **docs-only** PR (no file under `stages/`), or
+- for **personal practice** (no effect on GCP).
+
+Changes under `stages/` must **always** be reviewed and approved by another `devops` member;
+no bypass, even when the plan looks harmless. If you bypass, the PR description must contain
+one line: `Bypass: <reason>` (e.g. `Bypass: docs-only, runbook wording`).
+
 ## 4. Merge
 
 PR → **Merge pull request** → choose **Create a merge commit** (keeps one commit per purpose;
@@ -77,6 +87,19 @@ git log -1 --format='%ae | %ce'   # expect: <id>+<login>@users.noreply.github.co
 Any other address in the output is a leak of personal data: report it to the Org Owner.
 Pushed history is not rewritten without the Org Owner's explicit decision.
 
+Post-merge approval check (every PR, in particular one merged with a bypass):
+
+```bash
+curl -s https://api.github.com/repos/<org>/<repo>/pulls/<N>/reviews \
+  | python3 -c 'import json,sys; print([(r["state"]) for r in json.load(sys.stdin)])'
+# expect: ["APPROVED"] for any PR touching stages/
+# []  = merged without review (bypassed): the PR description must have "Bypass: <reason>"
+#       and the reason must be docs-only or personal practice
+```
+
+A bypassed PR under `stages/`, or a bypass without a stated reason, is a violation: report it
+to the Org Owner and ask a reviewer to review the merged change afterwards.
+
 ## 5. Approver: approve the apply (only if stages changed)
 
 Merging a change under `stages/<stage>/` starts `<stage>-apply`, which waits for approval.
@@ -85,5 +108,6 @@ follows [approve-apply.md](approve-apply.md). Write the expected plan summary
 (`Plan: X to add, Y to change, Z to destroy`) in the PR description so the approver can
 compare it.
 
-After the build succeeds, the change is live. Approvals are recorded in the seed project's
+After the build succeeds, the change is live; devops can confirm no drift with the
+`<stage>-check` job ([run-checks.md](run-checks.md)). Approvals are recorded in the seed project's
 Admin Activity audit log (`ApproveBuild`).

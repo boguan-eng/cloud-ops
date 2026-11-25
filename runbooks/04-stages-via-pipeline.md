@@ -1,15 +1,19 @@
-# 04 — Build Stages 1–3 Through the Pipeline (From Zero)
+# 04 — Build Stages 1–3 Through the Pipeline (Last Bootstrap Step)
 
-Creates the org IAM, environment folders and projects, WIF pools and Artifact Registry by
-running each stage's `<key>-apply` trigger. Every apply waits for the approver.
+Last step of the from-zero bootstrap, run **once** by the Org Owner: creates the org IAM,
+environment folders and projects, WIF pools and Artifact Registry by running each stage's
+`<key>-apply` trigger. Every apply waits for the approver. Afterwards the Org Owner operates
+only stage 0 and break-glass; nobody starts applies by hand again.
 
 **Who / which account:**
-- GCP **Org Owner**: tfvars, local read-only plans, starts the apply triggers (CLI).
+- GCP **Org Owner**: tfvars, local read-only plans, starts the apply triggers and the
+  check jobs (CLI). The Org Owner holds actAs on the IaC SAs, so it can start triggers.
 - **Approver** (member of the approvers group): approves each apply in the Console.
 
 **Prerequisites:** runbooks 01–03 done (triggers exist, ruleset requires the plan checks);
 group `<prefix>-gcp-approvers` has at least one member; variables from runbook 02 section 0.
-**Next:** daily changes via [ops/change-via-pr.md](ops/change-via-pr.md).
+**Next:** all later changes via [ops/change-via-pr.md](ops/change-via-pr.md); checks via
+[ops/run-checks.md](ops/run-checks.md).
 
 Why the apply triggers are started by hand here: the stage code reached `main` (runbook 03)
 before the triggers existed, so no push will start them. Later changes start them by merge.
@@ -39,23 +43,32 @@ run_apply() {  # $1=<key>: start the apply trigger on main; it waits for approva
   gcloud builds triggers run "$1-apply" --branch=main \
     --region="$REGION" --project="$SEED_PROJECT"
 }
-run_check() {  # $1=<key>: start the manual check trigger on main (plan SA, no approval)
-  gcloud builds triggers run "$1-check" --branch=main \
-    --region="$REGION" --project="$SEED_PROJECT"
+run_check() {  # $1=<key>: run the Scheduler job <key>-check (starts the check build as iac-check-runner)
+  gcloud scheduler jobs run "$1-check" --location="$REGION" --project="$SEED_PROJECT"
+}
+check_result() {  # $1=<key>: status and start time of the latest check build
+  gcloud builds list --region="$REGION" --project="$SEED_PROJECT" \
+    --filter="substitutions.TRIGGER_NAME=$1-check" --limit=1 --format='value(status,createTime)'
 }
 ```
 
+`run_check` prints nothing and returns at once; the build appears **1–4 minutes later**.
+Wait, then `check_result <key>`: the `createTime` must be after the job run, and the status
+**SUCCESS** (`WORKING` or `QUEUED` = not finished, repeat). Do not use
+`gcloud builds triggers run …-check`: it also works for the Org Owner, but checks are meant to
+run the same way devops runs them ([ops/run-checks.md](ops/run-checks.md)).
+
 For each stage below: fill `terraform.tfvars` from `terraform.tfvars.example`, `prepare`,
-tell the approver the plan summary, `run_apply`, wait for **Success**, then `run_check` and
-require **SUCCESS** as well (see below).
+tell the approver the plan summary, `run_apply`, wait for **Success**, then `run_check`,
+wait 1–4 minutes and require `check_result` = **SUCCESS** as well (see below).
 The approver follows [ops/approve-apply.md](ops/approve-apply.md); since there is no PR plan
 build, they compare the summary from the Org Owner with step **plan** of the apply build
 after it ran, and report a mismatch at once.
 
 Why `run_check` after every apply: the first apply only creates resources, so it does not
 prove the plan SA can read what now exists; a failed check (error or diff) means a missing
-read role in stage 0 (see `foundation-design.md`, Plan SA Read Coverage). Follow the build in
-the Console or with `gcloud builds list` (the command returns once the build has started).
+read role in stage 0 (see `foundation-design.md`, Plan SA Read Coverage). On FAILURE open the
+build log in the Console (seed project → Cloud Build → History → `<key>-check`).
 
 ## 1. Stage 1 — org IAM
 
@@ -65,7 +78,7 @@ the Console or with `gcloud builds list` (the command returns once the build has
 prepare 1-org 1-org          # expect: Plan: N to add, 0 to change, 0 to destroy
 run_apply 1-org
 # after SUCCESS + approval:
-run_check 1-org   # require SUCCESS
+run_check 1-org; sleep 240; check_result 1-org   # require SUCCESS
 ```
 
 ## 2. Stage 2 — folders, projects, folder IAM
@@ -79,7 +92,7 @@ deleted project IDs can never be reused.
 prepare 2-environments 2-environments   # only creates (folders, 2 projects, APIs, IAM)
 run_apply 2-environments
 # after SUCCESS + approval:
-run_check 2-environments   # require SUCCESS
+run_check 2-environments; sleep 240; check_result 2-environments   # require SUCCESS
 ```
 
 This also grants the project-tier IaC SAs their roles on the env folders, so stage 3 can
@@ -103,7 +116,7 @@ gcloud beta services identity create --service=privilegedaccessmanager.googleapi
 prepare 3-cicd/wif 3-cicd-wif   # expect: 10 to add (2 pools, 2 providers, 6 APIs)
 run_apply 3-cicd-wif
 # after SUCCESS + approval:
-run_check 3-cicd-wif   # require SUCCESS
+run_check 3-cicd-wif; sleep 240; check_result 3-cicd-wif   # require SUCCESS
 ```
 
 ## 4. Stage 3 — Artifact Registry
@@ -115,7 +128,7 @@ run_check 3-cicd-wif   # require SUCCESS
 prepare 3-cicd/ar 3-cicd-ar     # expect per repo: 2 repos + 2 writer + 1 prod-reads-nonprod, plus 2 APIs
 run_apply 3-cicd-ar
 # after SUCCESS + approval:
-run_check 3-cicd-ar   # require SUCCESS
+run_check 3-cicd-ar; sleep 240; check_result 3-cicd-ar   # require SUCCESS
 ```
 
 ## 5. App repos
@@ -130,8 +143,13 @@ Set each app repo's environment secrets from the outputs, as described in
 gcloud builds list --region="$REGION" --project="$SEED_PROJECT" \
   --format='table(substitutions.TRIGGER_NAME,status,approval.result.decision)' --limit=12
 # expect each <key>-apply: SUCCESS, APPROVED
-run_check 1-org; run_check 2-environments; run_check 3-cicd-wif; run_check 3-cicd-ar
-# expect each <key>-check: SUCCESS (no approval; re-run the same way to detect drift)
+for k in 1-org 2-environments 3-cicd-wif 3-cicd-ar; do run_check "$k"; done
+sleep 240   # the builds appear 1–4 minutes after the job run
+for k in 1-org 2-environments 3-cicd-wif 3-cicd-ar; do echo "$k: $(check_result "$k")"; done
+# expect each <key>-check: SUCCESS with a createTime after the run (no approval)
+gcloud scheduler jobs list --location="$REGION" --project="$SEED_PROJECT" \
+  --format='table(name.basename(),state,schedule,timeZone)'
+# expect 4 jobs <key>-check, ENABLED, "0 3 * * *", Asia/Taipei (daily checks start tomorrow)
 gcloud storage ls "gs://${STATE_BUCKET}/tfstate/"   # 0-bootstrap, 1-org, 2-environments, 3-cicd-wif, 3-cicd-ar
 gcloud logging read 'protoPayload.methodName:"ApproveBuild"' --project="$SEED_PROJECT" \
   --freshness=1d --format='value(timestamp,protoPayload.authenticationInfo.principalEmail)'
@@ -144,5 +162,9 @@ same digests in the prod project.
 Note: after stage 2, the Org Owner and devops have no read access to the WIF/AR resources
 in the env projects (by design), so local plans of stage 3 fail once those resources exist.
 Use the plan builds of PRs instead.
+
+**From now on:** the bootstrap is finished. Every change goes through a PR
+([ops/change-via-pr.md](ops/change-via-pr.md)); the checks run daily at 03:00 Asia/Taipei and
+on demand by devops ([ops/run-checks.md](ops/run-checks.md)).
 
 **Next:** [ops/change-via-pr.md](ops/change-via-pr.md).

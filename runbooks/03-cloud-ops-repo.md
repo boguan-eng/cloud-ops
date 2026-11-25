@@ -1,7 +1,8 @@
 # 03 — cloud-ops Repository and Pipeline
 
 Publishes `cloud-ops`, protects `main`, connects it to Cloud Build and creates the per-stage
-triggers (PR → plan; merge to `main` → apply after approval).
+triggers (PR → plan; merge to `main` → apply after approval; manual check) and the daily
+check jobs.
 
 **Who:** GitHub org **Owner** (browser, sections 1–3 and the browser part of 4) and the GCP
 **Org Owner** (CLI, sections 4–5).
@@ -39,7 +40,7 @@ Repo → **Settings** → **Rules** → **Rulesets** → **New ruleset** → **N
 - Check **Restrict deletions**, **Block force pushes**.
 - Check **Require a pull request before merging**: required approvals **1**,
   **Dismiss stale pull request approvals when new commits are pushed**.
-- Bypass list: **Organization admin** only (break-glass).
+- Bypass list: **Organization admin** only. Use only per `ops/change-via-pr.md` "Review bypass" (docs-only or practice PRs, reason stated; never `stages/` changes).
 - **Create**.
 
 With a single devops member, the PR author cannot approve their own PR: merging needs another
@@ -87,7 +88,8 @@ github_repo_uri        = "https://github.com/<GITHUB_ORG>/cloud-ops.git"
 ```bash
 cd stages/0-bootstrap
 tofu init -backend-config=backend.hcl
-tofu apply            # expect: 13 to add (repository link + 12 triggers: 4 plan, 4 apply, 4 check)
+tofu apply            # expect: repository link + 12 triggers (4 plan, 4 apply, 4 check),
+                      # SA iac-check-runner + its role/bindings, 4 Scheduler jobs; no destroy
 gcloud storage cp terraform.tfvars "gs://${STATE_BUCKET}/tfvars/0-bootstrap/terraform.tfvars"
 ```
 
@@ -122,7 +124,27 @@ for t in json.load(sys.stdin):
 ```
 
 Expected: 12 triggers. `*-plan`: PR, approval False, plan SA. `*-apply`: PUSH, approval True,
-apply SA. `*-check`: manual, approval False, plan SA (started by hand, see runbook 04). All `logsToGitHub=UNSET` (build logs stay in Cloud Logging).
+apply SA. `*-check`: manual, approval False, plan SA (started by the Scheduler jobs, see runbook 04
+and [ops/run-checks.md](ops/run-checks.md)). All `logsToGitHub=UNSET` (build logs stay in Cloud Logging).
+
+Check runner (stage 0): the SA exists, its seed custom role is `buildTriggerRunner`, and it may
+act as the two **plan** SAs only (never an apply SA):
+
+```bash
+gcloud iam service-accounts describe "iac-check-runner@${SEED_PROJECT}.iam.gserviceaccount.com" \
+  --project="$SEED_PROJECT" --format='value(email,disabled)'      # expect the email, empty/False
+for sa in iac-org-plan iac-project-plan iac-org-apply iac-project-apply; do
+  echo "== $sa"
+  gcloud iam service-accounts get-iam-policy "${sa}@${SEED_PROJECT}.iam.gserviceaccount.com" \
+    --project="$SEED_PROJECT" --flatten='bindings[].members' \
+    --filter='bindings.role=roles/iam.serviceAccountUser' --format='value(bindings.members)'
+done
+# expect: iac-check-runner listed under iac-org-plan and iac-project-plan ONLY;
+# under the two apply SAs only the trigger admins (Org Owner), never iac-check-runner
+gcloud scheduler jobs list --location="$REGION" --project="$SEED_PROJECT" \
+  --format='table(name.basename(),state,schedule,timeZone)'
+# expect 4 jobs <key>-check, ENABLED, schedule "0 3 * * *", Asia/Taipei
+```
 
 ```bash
 curl -s "https://api.github.com/repos/${GITHUB_ORG}/cloud-ops/rules/branches/main"
