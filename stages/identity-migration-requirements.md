@@ -43,7 +43,7 @@ membership or accounts; no IAM binding has to follow a person. Do this before ch
 | D4 | **Rebuild from zero** in the new org with the runbooks; delete the old setup **first** (user, 2026-11-25: nothing in it must be kept; demo apps may stop). No project move. |
 | D5 | Keep the current Free Trial billing account (no parent) for now and link the new projects to it. Later (trial end or a real company): new billing account with a **business** payments profile in the new org — deferred. |
 | D6 | Accounts: 2 super admins (break-glass; also Org Owners); one daily account per person and role. |
-| D7 | New project ID prefix `<new-prefix>` (neo-related, no old prefix). |
+| D7 | New project ID prefix `<new-prefix>` (replaces the old prefix). |
 | D9 | Review and approval of infrastructure changes are **only in GitHub**; Cloud Build apply runs on merge without manual approval (R10). Done after Cloud Identity, before the rebuild. |
 | D8 | Trial has about 2 months left (checked 2026-11-25): enough for the migration; re-check before R6. |
 
