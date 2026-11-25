@@ -2,3 +2,16 @@
 # All values below are FAKE placeholders.
 
 org_id = "123456789012"
+
+# Budget (budget.tf)
+billing_account     = "AAAAAA-BBBBBB-CCCCCC"
+seed_project_id     = "acme-seed-0000"
+budget_amount       = 4000 # whole units of budget_currency
+billing_alert_email = "acme-gcp-billing@googlegroups.com"
+
+# ---------------------------------------------------------------------------
+# Optional overrides. Defaults live in budget.tf. An override REPLACES the whole default.
+# ---------------------------------------------------------------------------
+
+# budget_currency   = "TWD" # must match the billing account currency
+# budget_thresholds = [0.5, 0.9, 1.0]
