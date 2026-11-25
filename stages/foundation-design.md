@@ -129,6 +129,11 @@ grant in the Console ("You need additional access to the folder"). Fix in stage 
 when a grant becomes active), approvers group → `resourcemanager.folderViewer` on the prod
 folder (folder metadata only; Console chosen over CLI-only approval for usability). Normal path:
 request → email to approvers → link → approve in the Console (`runbooks/ops/approve-pam-grant.md`).
+Revoke (same gap, 2026-11-25): only `roles/privilegedaccessmanager.admin` holds
+`privilegedaccessmanager.grants.revoke`, and the Org Owner was denied. It also edits
+entitlements, so it is granted on the prod folder to the Org Owner only (`pam_admin_principals`;
+no added risk, the Org Owner can grant it to themselves), never to approvers (they could make
+themselves eligible).
 
 Acceptance 5 uses `selfuse-operator` (devops) with a PAM grant, ended early by revoke.
 Acceptance 6 uses the approver account temporarily added to the developers group (removed
