@@ -25,14 +25,24 @@ concepts, trade-offs (GCP vs third-party, price, maintenance) and permission mat
 - Assumed scale: 1–2 org owners, 1–2 devops, 3–10 developers.
 - IaC tool: OpenTofu.
 
+## Operating Model (decided 2026-11-25)
+
+- The Org Owner (highest privilege) operates only the bootstrap: stage 0 applied locally
+  (OpenTofu + gcloud), plus, once, starting the first apply of stages 1–3 with gcloud at the end
+  of a from-zero setup (still approved by an approver). Otherwise only break-glass.
+- devops changes GCP only through git: PR → plan → review/approve → merge to `main` → approved
+  apply. devops holds no standing write role in any environment.
+- Direct prod write (PAM elevation) is for incidents only (pipeline broken, urgent rollback); the
+  change is then reconciled by a PR and verified by a `<stage>-check` with no diff.
+
 ## Personas and Permissions
 
 | Persona | Permissions | Usage |
 |---|---|---|
-| Org Owner (non-technical, a) | `cloudowner.admin`; at least 2 owners | Break-glass; may run stage 0 (method A) |
+| Org Owner (non-technical, a) | `cloudowner.admin`; at least 2 owners | Stage 0 and first applies of stages 1–3 (bootstrap); break-glass |
 | Approver (non-technical, b) | Cloud Build Approver on the seed project only, via the `approvers` group (membership managed by the Org Owner) | Approves infra apply in the Console |
 | Billing viewer (non-technical, c) | `billing.viewer` on the billing account; budget alert recipient | Reads cost |
-| devops | nonprod: operate; prod: read-only by default + just-in-time elevation (mechanism chosen in design after verification) | Infra changes only via PR |
+| devops | read-only on prod and nonprod; prod incident-only just-in-time elevation; can start the scheduled `<stage>-check` jobs | Infra changes only via PR |
 | developers | existing logs/monitoring read + service-status viewer roles (e.g. Cloud Run, Trace, Error Reporting) | Read-only |
 | IaC plan SA | Read-only | Runs `plan` on PR |
 | IaC apply SA | Folder/project creation, IAM, etc. | Runs `apply` only after merge to `main` and approval |
@@ -52,7 +62,7 @@ concepts, trade-offs (GCP vs third-party, price, maintenance) and permission mat
    - Infrastructure Manager: recorded as evaluated and not adopted, with reasons.
 3. **Restructure**: move `gcp-iam-bootstrap`, `github-ci-wif`, `github-ci-ar` into the `stages/`
    layout; migrate local state to the GCS backend.
-4. **Permissions to real operating model**: devops prod access → read-only + JIT elevation;
+4. **Permissions to real operating model**: devops → read-only everywhere + prod JIT elevation (incident only);
    developers get service-status viewer roles.
 5. **Org Policy baseline**: record which secure-by-default policies the org already enforces,
    then decide which to add.
@@ -96,7 +106,9 @@ cloud-ops/
    Every PR is checked for anything beyond this (`runbooks/ops/change-via-pr.md`).
 3. Merge to `main` does not apply until an approver approves; approval is in audit logs.
 4. Restructure and state migration: `tofu plan` shows 0 changes before and after for every stage.
-5. devops cannot modify prod without elevation; with elevation it can; elevation expires.
+5. devops cannot modify prod or nonprod directly; with an approved prod elevation it can modify
+   prod; the elevation expires (no standing revoke right; in an incident the Org Owner uses
+   break-glass).
 6. developers can view Cloud Run service status, logs, metrics; cannot modify.
 7. Plan SA cannot write; apply SA cannot be used outside the Cloud Build trigger.
 8. No environment-specific values committed.
