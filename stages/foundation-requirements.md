@@ -57,8 +57,8 @@ concepts, trade-offs (GCP vs third-party, price, maintenance) and permission mat
    - B: Org Owner grants a devops member a time-bound elevation; devops runs it; grant removed.
 2. **Pipeline**:
    - Primary: (a) Cloud Build running OpenTofu; logs stay in GCP.
-   - Example only (b1): GitHub Actions in a private repo (Team plan, PR review as approval gate),
-     under `examples/`, marked **unverified**, not wired to live state or identities.
+   - Alternative (b1): GitHub Actions in a private repo (Team plan, PR review as approval gate),
+     described in the README pipeline comparison only (no example code; decided 2026-11-25).
    - Infrastructure Manager: recorded as evaluated and not adopted, with reasons.
 3. **Restructure**: move `gcp-iam-bootstrap`, `github-ci-wif`, `github-ci-ar` into the `stages/`
    layout; migrate local state to the GCS backend.
