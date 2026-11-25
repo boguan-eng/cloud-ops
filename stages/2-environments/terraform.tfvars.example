@@ -25,7 +25,7 @@ iac_org_apply_sa = "iac-org-apply@acme-iac-seed.iam.gserviceaccount.com"
 # an override REPLACES the whole default list (list every role you want to keep).
 # ---------------------------------------------------------------------------
 
-# devops_roles = [               # nonprod folder + prod-operator PAM entitlement (prod)
+# devops_roles = [               # prod-operator PAM entitlement only (incident use)
 #   "roles/compute.admin",
 #   "roles/container.admin",     # GKE: remove if not used
 #   "roles/run.admin",
@@ -41,10 +41,8 @@ iac_org_apply_sa = "iac-org-apply@acme-iac-seed.iam.gserviceaccount.com"
 #   "roles/serviceusage.serviceUsageAdmin",
 # ]
 
-# devops_prod_roles = ["roles/viewer"]                                      # prod folder, standing
-
-# devops_nonprod_extra_roles = [                                           # nonprod folder only
-#   "roles/resourcemanager.projectIamAdmin",
+# devops_standing_roles = [                                                # prod + nonprod, standing, read-only
+#   "roles/viewer",
 #   "roles/iam.workloadIdentityPoolViewer",
 # ]
 
