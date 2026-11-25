@@ -10,6 +10,7 @@ prefix          = "acme"
 
 group_devops     = "acme-gcp-devops@googlegroups.com"
 group_developers = "acme-gcp-developers@googlegroups.com"
+group_approvers  = "acme-gcp-approvers@googlegroups.com"
 
 # Project-tier IaC service accounts (stage 0 output `service_accounts`).
 iac_project_plan_sa  = "iac-project-plan@acme-iac-seed.iam.gserviceaccount.com"
@@ -20,7 +21,7 @@ iac_project_apply_sa = "iac-project-apply@acme-iac-seed.iam.gserviceaccount.com"
 # an override REPLACES the whole default list (list every role you want to keep).
 # ---------------------------------------------------------------------------
 
-# devops_roles = [               # prod + nonprod folders
+# devops_roles = [               # nonprod folder + prod-operator PAM entitlement (prod)
 #   "roles/compute.admin",
 #   "roles/container.admin",     # GKE: remove if not used
 #   "roles/run.admin",
@@ -36,12 +37,20 @@ iac_project_apply_sa = "iac-project-apply@acme-iac-seed.iam.gserviceaccount.com"
 #   "roles/serviceusage.serviceUsageAdmin",
 # ]
 
-# devops_nonprod_extra_roles = ["roles/resourcemanager.projectIamAdmin"]   # nonprod folder only
+# devops_prod_roles = ["roles/viewer"]                                      # prod folder, standing
+
+# devops_nonprod_extra_roles = [                                           # nonprod folder only
+#   "roles/resourcemanager.projectIamAdmin",
+#   "roles/iam.workloadIdentityPoolViewer",
+# ]
 
 # developer_roles = [            # prod + nonprod folders
 #   "roles/logging.viewer",
 #   "roles/monitoring.viewer",
 #   "roles/serviceusage.serviceUsageConsumer",
+#   "roles/run.viewer",
+#   "roles/cloudtrace.user",
+#   "roles/errorreporting.viewer",
 # ]
 
 # project_services = ["logging.googleapis.com", "monitoring.googleapis.com"]
