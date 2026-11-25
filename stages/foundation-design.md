@@ -121,6 +121,15 @@ Kept: the Org Owner user's direct, manually granted org roles (break-glass; Org 
 allowed standing access by acceptance 1). Lockout prevention: the Org Owner can always restore
 Organization Administrator from the Organization details page.
 
+PAM approval path (gap found in T7-7, 2026-11-25): the design said who approves, not how an
+approver learns of a request or where they act. With consumer Google Groups, PAM sent no email
+(docs: it auto-notifies Cloud Identity users/groups only), and the approver could not open the
+grant in the Console ("You need additional access to the folder"). Fix in stage 2:
+`approver_email_recipients` = approvers group, `admin_email_recipients` = devops group (notified
+when a grant becomes active), approvers group → `resourcemanager.folderViewer` on the prod
+folder (folder metadata only; Console chosen over CLI-only approval for usability). Normal path:
+request → email to approvers → link → approve in the Console (`runbooks/ops/approve-pam-grant.md`).
+
 Acceptance 5 uses `selfuse-operator` (devops) with a PAM grant, ended early by revoke.
 Acceptance 6 uses the approver account temporarily added to the developers group (removed
 after the test: an approver must not stay in developers). Acceptance 7 by IAM inspection.
