@@ -47,12 +47,20 @@ resource "google_privileged_access_manager_entitlement" "prod_operator" {
     manual_approvals {
       require_approver_justification = true
       steps {
-        approvals_needed = 1
+        approvals_needed          = 1
+        approver_email_recipients = [var.group_approvers]
         approvers {
           principals = ["group:${var.group_approvers}"]
         }
       }
     }
+  }
+
+  # Notifications: PAM auto-notifies only Cloud Identity users/groups; our groups are consumer
+  # Google Groups, so both addresses are listed explicitly (found in T7-7: no email arrived).
+  # admin_email_recipients is notified when a grant becomes active (devops sees who got prod).
+  additional_notification_targets {
+    admin_email_recipients = [var.group_devops]
   }
 
   requester_justification_config {
@@ -63,4 +71,13 @@ resource "google_privileged_access_manager_entitlement" "prod_operator" {
     google_folder_iam_member.pam_service_agent,
     google_project_service.pam_prod,
   ]
+}
+
+# Approvers open the grant in the Console under the prod folder; the page needs
+# resourcemanager.folders.get there (found in T7-7: "You need additional access to the folder").
+# folderViewer is folder metadata only: no projects, resources or data.
+resource "google_folder_iam_member" "approvers_prod_folder_viewer" {
+  folder = google_folder.env["prod"].name
+  role   = "roles/resourcemanager.folderViewer"
+  member = "group:${var.group_approvers}"
 }
