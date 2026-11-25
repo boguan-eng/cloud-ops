@@ -83,6 +83,17 @@ Control: manual `<stage>-check` triggers (stage 0) run `tofu plan -detailed-exit
 as the plan SA; the build fails on any error or diff. Run each after a stage's first apply
 (runbook 04) and to detect drift. PR plan triggers cannot be run by hand.
 
+Who starts checks (decided 2026-11-25, operating model): starting a trigger needs
+`cloudbuild.builds.create` **and** actAs on the trigger's SA (spike 2026-11-25: denied with
+`user does not have impersonation permission on the trigger service account`; allowed for the
+check once actAs on the plan SA was added; apply still denied). actAs on a plan SA would let a
+human run any build as it (org-wide read, state and tfvars), so no human gets it. Instead, stage 0:
+SA `iac-check-runner` with a seed custom role (`cloudbuild.builds.create`) and actAs on the two
+plan SAs only (cannot start applies); 4 Cloud Scheduler jobs run the checks daily as that SA
+(3 jobs free per billing account, then USD 0.10/job/month — Cloud Scheduler pricing,
+2026-11-25); devops group → `roles/cloudscheduler.jobRunner` on the seed to run them on demand.
+Failure notification: deferred with the notification topic.
+
 ## Pipeline Flow
 
 1. PR touching `stages/<stage>/` → plan trigger → plan visible in Cloud Build (GCP only);
@@ -120,6 +131,14 @@ project with `billingbudgets` API on the quota project; billing-account IAM need
 Kept: the Org Owner user's direct, manually granted org roles (break-glass; Org Owner is
 allowed standing access by acceptance 1). Lockout prevention: the Org Owner can always restore
 Organization Administrator from the Organization details page.
+
+devops standing roles (operating model, 2026-11-25): prod and nonprod both `viewer` +
+`iam.workloadIdentityPoolViewer` (viewer cannot read WIF pools); nonprod admin roles,
+`projectIamAdmin` and `logging.viewer` (covered by viewer) removed. `prod-operator` is
+incident-only; no nonprod entitlement (nonprod incidents go through PRs). Revoke: only
+`roles/privilegedaccessmanager.admin` can revoke grants and it can also edit entitlements; it is
+not granted to anyone (grants expire; verified 2026-11-25: ENDED → devops write denied). In an
+incident the Org Owner uses break-glass.
 
 PAM approval path (gap found in T7-7, 2026-11-25): the design said who approves, not how an
 approver learns of a request or where they act. With consumer Google Groups, PAM sent no email
