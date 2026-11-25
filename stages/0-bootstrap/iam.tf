@@ -38,6 +38,19 @@ locals {
     "roles/logging.viewer",
   ]
 
+  # Seed-project roles of the IaC SAs: key = "<sa key>/<role>".
+  # apply: manage Monitoring email channels (stage 1 budget alerts); both: use the seed project
+  # as quota project (budgets / Monitoring APIs); plan: read channels.
+  seed_sa_roles = {
+    org-apply = ["roles/monitoring.notificationChannelEditor", "roles/serviceusage.serviceUsageConsumer"]
+    org-plan  = ["roles/monitoring.viewer", "roles/serviceusage.serviceUsageConsumer"]
+  }
+  seed_sa_bindings = merge([
+    for sa, roles in local.seed_sa_roles : {
+      for r in roles : "${sa}/${r}" => { sa = sa, role = r }
+    }
+  ]...)
+
   approver_bindings = {
     for pair in setproduct(var.approver_principals, local.approver_roles) :
     "${pair[0]}|${pair[1]}" => { member = pair[0], role = pair[1] }
@@ -80,6 +93,15 @@ resource "google_billing_account_iam_member" "org_apply" {
   member             = "serviceAccount:${google_service_account.iac["org-apply"].email}"
 }
 
+# Billing group (viewer only; no billing.admin to anyone here).
+resource "google_billing_account_iam_member" "billing_viewer" {
+  for_each = toset(var.billing_viewer_principals)
+
+  billing_account_id = var.billing_account
+  role               = "roles/billing.viewer"
+  member             = each.key
+}
+
 # ---------------------------------------------------------------------------
 # State bucket (all four SAs). The project-tier SAs get ONLY bucket access here:
 # their roles on env folders/projects are granted by stages/2-environments
@@ -112,6 +134,14 @@ resource "google_project_iam_member" "sa_log_writer" {
   project = google_project.seed.project_id
   role    = "roles/logging.logWriter"
   member  = "serviceAccount:${each.value.email}"
+}
+
+resource "google_project_iam_member" "seed_sa" {
+  for_each = local.seed_sa_bindings
+
+  project = google_project.seed.project_id
+  role    = each.value.role
+  member  = "serviceAccount:${google_service_account.iac[each.value.sa].email}"
 }
 
 resource "google_artifact_registry_repository_iam_member" "sa_builder_reader" {

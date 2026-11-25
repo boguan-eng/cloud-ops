@@ -16,6 +16,10 @@ group_approvers  = "acme-gcp-approvers@googlegroups.com"
 iac_project_plan_sa  = "iac-project-plan@acme-iac-seed.iam.gserviceaccount.com"
 iac_project_apply_sa = "iac-project-apply@acme-iac-seed.iam.gserviceaccount.com"
 
+# The stage 2 apply SA (stage 0 output `service_accounts`, key org-apply); its auto-granted
+# roles/owner on the env projects is removed (owner-cleanup.tf).
+iac_org_apply_sa = "iac-org-apply@acme-iac-seed.iam.gserviceaccount.com"
+
 # ---------------------------------------------------------------------------
 # Optional overrides. Defaults live in variables.tf. Uncomment to override;
 # an override REPLACES the whole default list (list every role you want to keep).
