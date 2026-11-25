@@ -4,6 +4,7 @@
 locals {
   org_plan_roles = [
     "roles/viewer",
+    "roles/resourcemanager.folderViewer", # roles/viewer has no resourcemanager.folders.get
     "roles/iam.securityReviewer",
     "roles/orgpolicy.policyViewer",
     "roles/privilegedaccessmanager.viewer",
