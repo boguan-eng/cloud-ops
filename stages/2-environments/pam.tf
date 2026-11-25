@@ -1,5 +1,5 @@
 # Privileged Access Manager (PAM): temporary, approved elevation of group_devops on the prod
-# folder. Standing prod access of devops is only devops_prod_roles (iam.tf).
+# folder. Standing devops access is read-only (devops_standing_roles, iam.tf); incident use only.
 # Docs: https://cloud.google.com/iam/docs/pam-permissions-and-setup
 #       https://cloud.google.com/iam/docs/pam-create-entitlements
 

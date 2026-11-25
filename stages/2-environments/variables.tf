@@ -40,7 +40,7 @@ variable "group_developers" {
 }
 
 variable "devops_roles" {
-  description = "Folder-level roles granted to group_devops on the nonprod folder, and the role set of the prod-operator PAM entitlement on the prod folder (temporary, not standing)."
+  description = "Role set of the incident-only prod-operator PAM entitlement on the prod folder (temporary, approved; not standing anywhere)."
   type        = list(string)
   default = [
     "roles/compute.admin",
@@ -59,16 +59,10 @@ variable "devops_roles" {
   ]
 }
 
-variable "devops_prod_roles" {
-  description = "Standing folder-level roles granted to group_devops on the prod folder. Everything else on prod is via the PAM entitlement."
+variable "devops_standing_roles" {
+  description = "Standing read-only folder-level roles of group_devops on prod and nonprod (viewer cannot read WIF pools). Changes go through PRs; prod writes only via the PAM entitlement."
   type        = list(string)
-  default     = ["roles/viewer"]
-}
-
-variable "devops_nonprod_extra_roles" {
-  description = "Extra folder-level roles granted to group_devops on the nonprod folder only."
-  type        = list(string)
-  default     = ["roles/resourcemanager.projectIamAdmin", "roles/iam.workloadIdentityPoolViewer"]
+  default     = ["roles/viewer", "roles/iam.workloadIdentityPoolViewer"]
 }
 
 variable "developer_roles" {
