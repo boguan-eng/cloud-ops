@@ -16,6 +16,7 @@ Never commit real values (IDs, emails); fill them in shell variables or git-igno
 
 | # | Runbook | Who (account) | Result |
 |---|---|---|---|
+| 00 | [00-identity.md](00-identity.md) | Domain owner / first super admin | Mail forwarding, Cloud Identity, accounts, groups, organization, bootstrap roles to `gcp-admins` |
 | 01 | [01-github-org.md](01-github-org.md) | GitHub org owner | Org with 2FA, owner-only repo creation, teams `devops` / `developers` |
 | 02 | [02-stage0-bootstrap.md](02-stage0-bootstrap.md) | GCP Org Owner (method A) or a devops member with temporary elevation (method B) | Seed project, state bucket, builder image, 4 IaC service accounts |
 | 03 | [03-cloud-ops-repo.md](03-cloud-ops-repo.md) | GitHub org owner (browser) + GCP Org Owner (CLI) | Public `cloud-ops` with protected `main`; Cloud Build connection; 12 triggers, check runner SA, 4 daily check jobs |
