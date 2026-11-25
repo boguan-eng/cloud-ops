@@ -88,3 +88,15 @@ variable "github_repo_uri" {
   type        = string
   default     = ""
 }
+
+variable "check_schedule" {
+  description = "Cron schedule (unix-cron) of the Cloud Scheduler jobs that start the <stage>-check triggers."
+  type        = string
+  default     = "0 3 * * *"
+}
+
+variable "check_time_zone" {
+  description = "IANA time zone for check_schedule."
+  type        = string
+  default     = "Asia/Taipei"
+}
