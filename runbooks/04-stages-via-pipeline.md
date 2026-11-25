@@ -72,7 +72,8 @@ build log in the Console (seed project → Cloud Build → History → `<key>-ch
 
 ## 1. Stage 1 — org IAM
 
-`1-org/terraform.tfvars`: `org_id`, `group_admins`.
+`1-org/terraform.tfvars`: `org_id`, `billing_account`, `seed_project_id`, `budget_amount`,
+`billing_alert_email` (see `stages/1-org/terraform.tfvars.example`).
 
 ```bash
 prepare 1-org 1-org          # expect: Plan: N to add, 0 to change, 0 to destroy
