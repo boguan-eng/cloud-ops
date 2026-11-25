@@ -40,7 +40,7 @@ membership or accounts; no IAM binding has to follow a person. Do this before ch
 | D1 | Use Cloud Identity Free with the domain `<domain>` (chosen; not in this repo). |
 | D2 | Register the domain at Cloudflare. DNS and mail forwarding on Cloudflare. |
 | D3 | Cloudflare account login: the devops person's existing personal Gmail; second Cloudflare Super Administrator: the primary Org Owner's personal Gmail. Both outside `<domain>`, so recovery does not depend on the domain. |
-| D4 | **Rebuild from zero** in the new org with the runbooks; delete the old org at the end. No project move. |
+| D4 | **Rebuild from zero** in the new org with the runbooks; delete the old setup **first** (user, 2026-11-25: nothing in it must be kept; demo apps may stop). No project move. |
 | D5 | Keep the current Free Trial billing account (no parent) for now and link the new projects to it. Later (trial end or a real company): new billing account with a **business** payments profile in the new org — deferred. |
 | D6 | Accounts: 2 super admins (break-glass; also Org Owners); one daily account per person and role. |
 | D7 | New project ID prefix `<new-prefix>` (neo-related, no old prefix). |
@@ -100,9 +100,11 @@ membership or accounts; no IAM binding has to follow a person. Do this before ch
 4. demo-api and demo-web repos are switched to the new WIF provider and Artifact Registry.
 
 ### R7 Old organization teardown
-1. After the new org passes acceptance: delete old projects, then the old org (Org Owner).
+1. Before the rebuild: delete the old projects, folders, budget and old groups; the old org
+   itself is deleted by its Organization Owner once the projects are purged (30 days).
 2. The billing account stays (no parent); old Gmail IAM grants on it are removed.
-3. Old GitHub triggers/connection that point to the old seed are removed.
+3. Old GitHub triggers/connection go with the old seed; the old required checks are removed from
+   the ruleset until the new ones exist.
 
 ### R8 People change (handover)
 1. Runbook `ops/change-person.md`: join and leave for each role, including super admin,
@@ -127,10 +129,11 @@ membership or accounts; no IAM binding has to follow a person. Do this before ch
 
 ## Order
 
+0. Teardown of the old setup (R7).
 1. Identity: domain, Cloudflare, mail, Cloud Identity, accounts, groups (R1–R3, spikes S1, S3).
 2. Approval change in code and docs (R10, spike S5), before the rebuild.
 3. Rebuild from zero (R4–R6, spikes S2, S4).
-4. Teardown of the old org (R7); handover runbook exercised (R8).
+4. Handover runbook exercised (R8).
 
 ## Spikes (verify before design is final)
 
@@ -150,7 +153,8 @@ membership or accounts; no IAM binding has to follow a person. Do this before ch
 
 ## Acceptance (requirement level)
 
-1. Old org deleted; nothing in the new org depends on a personal Gmail account
+1. Old projects deleted (old org deletion follows after the 30-day purge, not on this path);
+   nothing in the new org depends on a personal Gmail account
    (IAM on org, folders, projects, billing account checked).
 2. Foundation acceptance 1–8 pass again in the new org.
 3. A test account joins and leaves via `ops/change-person.md`; after leaving it has no access.
