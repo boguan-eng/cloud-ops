@@ -1,4 +1,4 @@
-# Cloud Build repository link + per-stage plan/apply triggers (2nd gen, GitHub).
+# Cloud Build repository link + per-stage plan/apply/check triggers (2nd gen, GitHub).
 # The GitHub connection itself is created MANUALLY in the Console (interactive GitHub App
 # install/OAuth) and referenced by name. Everything here is gated by var.enable_github.
 #
@@ -78,6 +78,40 @@ resource "google_cloudbuild_trigger" "apply" {
 
   approval_config {
     approval_required = true
+  }
+
+  substitutions = {
+    _STAGE_DIR     = each.value.dir
+    _STAGE_KEY     = each.key
+    _STATE_BUCKET  = google_storage_bucket.state.name
+    _BUILDER_IMAGE = var.builder_image
+  }
+}
+
+# Manual drift/coverage check: tofu plan -detailed-exitcode on main as the plan SA. Manual
+# triggers have no SCM event, so source_to_build/git_file_source name the 2nd-gen repository
+# (the `repository` argument is the Repo API resource). Start with
+# `gcloud builds triggers run <key>-check --branch=main`. No approval: it never applies.
+resource "google_cloudbuild_trigger" "check" {
+  for_each = local.stage_triggers
+
+  project         = google_project.seed.project_id
+  location        = var.region
+  name            = "${each.key}-check"
+  description     = "drift/coverage check: tofu plan -detailed-exitcode on main (manual)"
+  service_account = google_service_account.iac["${each.value.tier}-plan"].id
+
+  source_to_build {
+    repository = google_cloudbuildv2_repository.cloud_ops[0].id
+    ref        = "refs/heads/main"
+    repo_type  = "GITHUB"
+  }
+
+  git_file_source {
+    path       = "stages/cloudbuild/check.yaml"
+    repository = google_cloudbuildv2_repository.cloud_ops[0].id
+    revision   = "refs/heads/main"
+    repo_type  = "GITHUB"
   }
 
   substitutions = {

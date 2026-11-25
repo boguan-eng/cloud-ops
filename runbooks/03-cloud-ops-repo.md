@@ -87,7 +87,7 @@ github_repo_uri        = "https://github.com/<GITHUB_ORG>/cloud-ops.git"
 ```bash
 cd stages/0-bootstrap
 tofu init -backend-config=backend.hcl
-tofu apply            # expect: 9 to add (repository link + 8 triggers)
+tofu apply            # expect: 13 to add (repository link + 12 triggers: 4 plan, 4 apply, 4 check)
 gcloud storage cp terraform.tfvars "gs://${STATE_BUCKET}/tfvars/0-bootstrap/terraform.tfvars"
 ```
 
@@ -115,14 +115,14 @@ gcloud builds triggers list --region="$REGION" --project="$SEED_PROJECT" --forma
 import json,sys
 for t in json.load(sys.stdin):
   r=t.get("repositoryEventConfig",{})
-  print(t["name"], "PR" if "pullRequest" in r else "PUSH",
+  print(t["name"], "PR" if "pullRequest" in r else "PUSH" if "push" in r else "MANUAL",
         "approval="+str(t.get("approvalConfig",{}).get("approvalRequired",False)),
         "logsToGitHub="+t.get("includeBuildLogs","UNSET"),
         t.get("serviceAccount","").split("/")[-1].split("@")[0])'
 ```
 
-Expected: 8 triggers. `*-plan`: PR, approval False, plan SA. `*-apply`: PUSH, approval True,
-apply SA. All `logsToGitHub=UNSET` (build logs stay in Cloud Logging).
+Expected: 12 triggers. `*-plan`: PR, approval False, plan SA. `*-apply`: PUSH, approval True,
+apply SA. `*-check`: manual, approval False, plan SA (started by hand, see runbook 04). All `logsToGitHub=UNSET` (build logs stay in Cloud Logging).
 
 ```bash
 curl -s "https://api.github.com/repos/${GITHUB_ORG}/cloud-ops/rules/branches/main"

@@ -39,13 +39,23 @@ run_apply() {  # $1=<key>: start the apply trigger on main; it waits for approva
   gcloud builds triggers run "$1-apply" --branch=main \
     --region="$REGION" --project="$SEED_PROJECT"
 }
+run_check() {  # $1=<key>: start the manual check trigger on main (plan SA, no approval)
+  gcloud builds triggers run "$1-check" --branch=main \
+    --region="$REGION" --project="$SEED_PROJECT"
+}
 ```
 
 For each stage below: fill `terraform.tfvars` from `terraform.tfvars.example`, `prepare`,
-tell the approver the plan summary, `run_apply`, wait for **Success**.
+tell the approver the plan summary, `run_apply`, wait for **Success**, then `run_check` and
+require **SUCCESS** as well (see below).
 The approver follows [ops/approve-apply.md](ops/approve-apply.md); since there is no PR plan
 build, they compare the summary from the Org Owner with step **plan** of the apply build
 after it ran, and report a mismatch at once.
+
+Why `run_check` after every apply: the first apply only creates resources, so it does not
+prove the plan SA can read what now exists; a failed check (error or diff) means a missing
+read role in stage 0 (see `foundation-design.md`, Plan SA Read Coverage). Follow the build in
+the Console or with `gcloud builds list` (the command returns once the build has started).
 
 ## 1. Stage 1 — org IAM
 
@@ -54,6 +64,8 @@ after it ran, and report a mismatch at once.
 ```bash
 prepare 1-org 1-org          # expect: Plan: N to add, 0 to change, 0 to destroy
 run_apply 1-org
+# after SUCCESS + approval:
+run_check 1-org   # require SUCCESS
 ```
 
 ## 2. Stage 2 — folders, projects, folder IAM
@@ -66,6 +78,8 @@ deleted project IDs can never be reused.
 ```bash
 prepare 2-environments 2-environments   # only creates (folders, 2 projects, APIs, IAM)
 run_apply 2-environments
+# after SUCCESS + approval:
+run_check 2-environments   # require SUCCESS
 ```
 
 This also grants the project-tier IaC SAs their roles on the env folders, so stage 3 can
@@ -88,6 +102,8 @@ gcloud beta services identity create --service=privilegedaccessmanager.googleapi
 ```bash
 prepare 3-cicd/wif 3-cicd-wif   # expect: 10 to add (2 pools, 2 providers, 6 APIs)
 run_apply 3-cicd-wif
+# after SUCCESS + approval:
+run_check 3-cicd-wif   # require SUCCESS
 ```
 
 ## 4. Stage 3 — Artifact Registry
@@ -98,6 +114,8 @@ run_apply 3-cicd-wif
 ```bash
 prepare 3-cicd/ar 3-cicd-ar     # expect per repo: 2 repos + 2 writer + 1 prod-reads-nonprod, plus 2 APIs
 run_apply 3-cicd-ar
+# after SUCCESS + approval:
+run_check 3-cicd-ar   # require SUCCESS
 ```
 
 ## 5. App repos
@@ -110,8 +128,10 @@ Set each app repo's environment secrets from the outputs, as described in
 
 ```bash
 gcloud builds list --region="$REGION" --project="$SEED_PROJECT" \
-  --format='table(substitutions.TRIGGER_NAME,status,approval.result.decision)' --limit=8
+  --format='table(substitutions.TRIGGER_NAME,status,approval.result.decision)' --limit=12
 # expect each <key>-apply: SUCCESS, APPROVED
+run_check 1-org; run_check 2-environments; run_check 3-cicd-wif; run_check 3-cicd-ar
+# expect each <key>-check: SUCCESS (no approval; re-run the same way to detect drift)
 gcloud storage ls "gs://${STATE_BUCKET}/tfstate/"   # 0-bootstrap, 1-org, 2-environments, 3-cicd-wif, 3-cicd-ar
 gcloud logging read 'protoPayload.methodName:"ApproveBuild"' --project="$SEED_PROJECT" \
   --freshness=1d --format='value(timestamp,protoPayload.authenticationInfo.principalEmail)'
