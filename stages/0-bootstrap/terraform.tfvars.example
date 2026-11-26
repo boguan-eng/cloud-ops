@@ -28,8 +28,8 @@ trigger_admin_principals  = ["group:gcp-admins@example.com"]
 # ---------------------------------------------------------------------------
 enable_github = false
 
-# builder_image          = "us-central1-docker.pkg.dev/acme-iac-seed/iac-builder/tofu-builder:1.13.1"
-# github_connection_name = "github-cloud-ops"
+# builder_image          = "us-central1-docker.pkg.dev/acme-iac-seed/iac-builder/tofu:1.13.1"
+# github_connection_name = "github"
 # github_repo_uri        = "https://github.com/acme/cloud-ops.git"
 
 # Scheduled drift/coverage checks (Cloud Scheduler -> <stage>-check triggers). Defaults shown.
