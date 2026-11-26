@@ -130,8 +130,16 @@ docker build --build-arg TOFU_VERSION="$TOFU_VERSION" -t "$BUILDER_IMAGE" builde
 docker push "$BUILDER_IMAGE"
 ```
 
-If the gcloud credential helper uses an account without access, log in with a token instead:
-`gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://${REGION}-docker.pkg.dev`.
+If the push fails with "You do not currently have an active account selected" (the gcloud
+credential helper in `~/.docker/config.json` uses the default gcloud configuration and overrides
+`docker login`), push with a temporary Docker config and a token instead:
+
+```bash
+export DOCKER_CONFIG=$(mktemp -d)
+gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin "https://${REGION}-docker.pkg.dev"
+docker push "$BUILDER_IMAGE"
+rm -rf "$DOCKER_CONFIG"; unset DOCKER_CONFIG
+```
 
 ## B2. (Method B only) Admin removes the elevation
 
@@ -160,7 +168,8 @@ gcloud projects get-iam-policy "$SEED_PROJECT" --flatten='bindings[].members' \
 ```bash
 gcloud organizations get-iam-policy "$ORG_ID" --flatten='bindings[].members' \
   --filter='bindings.members:serviceAccount:iac-' --format='table(bindings.members,bindings.role)'
-# iac-org-plan: viewer, iam.securityReviewer, orgpolicy.policyViewer, privilegedaccessmanager.viewer
+# iac-org-plan: viewer, resourcemanager.folderViewer, iam.securityReviewer, orgpolicy.policyViewer,
+#               privilegedaccessmanager.viewer
 # iac-org-apply: organizationAdmin, folderAdmin, projectCreator, orgpolicy.policyAdmin,
 #                privilegedaccessmanager.admin, serviceusage.serviceUsageAdmin
 gcloud billing accounts get-iam-policy "$BILLING_ACCOUNT" --flatten='bindings[].members' \

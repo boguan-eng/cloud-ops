@@ -69,14 +69,27 @@ gcloud builds connections describe "$CONNECTION" --region="$REGION" --project="$
   --format='value(installationState.actionUri)'
 ```
 
-Open the URL in a browser: choose the Google account of the admin, then on GitHub
-authorize and install the app as above. The page ends with "Connection configured
-successfully".
+Open the URL in a browser where the GitHub org Owner is signed in to github.com: choose the
+Google account of the admin, then on GitHub authorize and install the app as above. The page
+ends with "Connection configured successfully".
+
+If the app is already installed on the org (e.g. a rebuild), the page instead says "Cloud Build
+has detected at least one app installation that's available for use with this host
+connection" and lists `<installation ID> - <ORG> (organization)` and "Install in another
+account or organization": select the `<ORG>` installation. Its repository access stays as it
+is; check it is **Only select repositories → `cloud-ops`** (GitHub org → **Settings** →
+**GitHub Apps** → Google Cloud Build → **Configure**).
 
 ```bash
 gcloud builds connections describe "$CONNECTION" --region="$REGION" --project="$SEED_PROJECT" \
-  --format='value(installationState.stage)'      # expect COMPLETE
+  --format='value(installationState.stage,githubConfig.authorizerCredential.username)'
+# expect COMPLETE and an org Owner's GitHub username
 ```
+
+The authorizing GitHub user must be an org Owner (admin on `cloud-ops`); an author account
+(member with Write) makes section 5 fail with "the authorized user doesn't have the admin
+permission to repo". Wrong user: `gcloud builds connections delete "$CONNECTION" …`, create it
+again and authorize in a browser signed in to GitHub as an Owner only (e.g. a private window).
 
 ## 5. Create the triggers (GCP admin)
 
