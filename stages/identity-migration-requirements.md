@@ -122,7 +122,9 @@ membership or accounts; no IAM binding has to follow a person. Do this before ch
    recorded afterwards in the PR. Reason: without the Cloud Build gate, anyone who can bypass can
    apply without a second person.
 3. GitHub org: at least 2 owners, 2FA required; GitHub org owners can change the ruleset, so they
-   count as top-level admins and are covered by `ops/change-person.md`.
+   count as top-level admins and are covered by `ops/change-person.md`. **An account that
+   authors PRs is not an org owner** (org owners are the ruleset's bypass actors; found in the
+   M2-1 test, 2026-11-25: the author, then an owner, could bypass).
 4. The approvers group only approves PAM grants; `ops/approve-apply.md` is removed and
    `ops/change-approver.md` is rewritten.
 5. Design decision updated: approval records are PR reviews in GitHub; GCP records the apply build.

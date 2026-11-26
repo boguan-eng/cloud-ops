@@ -75,7 +75,7 @@ Rules:
 | Approvers keep PAM approver + prod `folderViewer` | `stages/2-environments/pam.tf` (unchanged) |
 | `CODEOWNERS`: `/stages/` and `/stages/cloudbuild/` → `@<org>/iac-reviewers` | `.github/CODEOWNERS` |
 | Ruleset `protect-main`: 1 approval, require code owner review, required checks = new `<key>-plan` names, bypass = organization admins only (no author bypass) | GitHub UI (runbook 01) |
-| GitHub org: 2 owners, require 2FA | GitHub UI (runbook 01) |
+| GitHub org: 2 owners, require 2FA; authors (devops) are members, not owners, because the bypass actor is Organization admin | GitHub UI (runbook 01) |
 | Docs: delete `ops/approve-apply.md`; rewrite `ops/change-approver.md` (PAM approvers only) and `ops/change-via-pr.md` (no Cloud Build approval, bypass = Org Owner emergency + PR note); update runbooks 01, 03, 04, README role matrix, `foundation-design.md` decisions | Repo docs |
 
 The old org is deleted first (phase 0), so no PR or merge runs against it. While no pipeline
