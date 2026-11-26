@@ -38,7 +38,7 @@ variable "budget_thresholds" {
 }
 
 variable "billing_alert_email" {
-  description = "Email of the billing Google Group, e.g. <prefix>-gcp-billing@googlegroups.com."
+  description = "Individual user email address for billing alerts; mail to group addresses is not delivered in this domain."
   type        = string
 }
 

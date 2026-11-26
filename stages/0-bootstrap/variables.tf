@@ -36,23 +36,29 @@ variable "state_bucket_name" {
 }
 
 variable "devops_principal" {
-  description = "IAM member of the devops team, with type prefix (e.g. 'group:acme-gcp-devops@googlegroups.com'). Gets Cloud Build viewer + logging viewer on the seed project."
+  description = "IAM member of the devops team, with type prefix (e.g. 'group:gcp-devops@example.com'). Gets Cloud Build viewer + logging viewer on the seed project."
   type        = string
 }
 
-variable "approver_principals" {
-  description = "IAM members (with type prefix, e.g. 'user:...' or 'group:...') allowed to approve apply builds on the seed project."
+variable "admin_principals" {
+  description = "IAM members, normally one admins group, that hold the organization bootstrap roles, seed project owner, and billing account admin."
   type        = list(string)
 }
 
+variable "seed_creator_principal" {
+  description = "IAM member that created the seed project and received roles/owner automatically (e.g. 'user:admin1@example.com'); removed after the admins group is owner."
+  type        = string
+  default     = ""
+}
+
 variable "billing_viewer_principals" {
-  description = "IAM members (with type prefix, normally one group, e.g. 'group:acme-gcp-billing@googlegroups.com') granted roles/billing.viewer on the billing account."
+  description = "IAM members (with type prefix, normally one group, e.g. 'group:gcp-billing@example.com') granted roles/billing.viewer on the billing account."
   type        = list(string)
   default     = []
 }
 
 variable "trigger_admin_principals" {
-  description = "IAM members allowed to actAs the IaC service accounts, which is required to create/update Cloud Build triggers that run as them. Normally the Org Owner user(s) only."
+  description = "IAM members allowed to actAs the IaC service accounts, which is required to create/update Cloud Build triggers that run as them. Normally the admins group only."
   type        = list(string)
 }
 

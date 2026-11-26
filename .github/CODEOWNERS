@@ -1,0 +1,3 @@
+# Changes here need a review from the IaC reviewers team (ruleset: require code owner review).
+/stages/   @boguan-eng/iac-reviewers
+/.github/  @boguan-eng/iac-reviewers

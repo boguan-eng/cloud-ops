@@ -43,12 +43,14 @@ resource "google_privileged_access_manager_entitlement" "prod_operator" {
     }
   }
 
+  # Notifications list individual addresses because group addresses receive no mail
+  # in this domain (spike S1, 2026-11-25). Approval itself still uses the approvers group.
   approval_workflow {
     manual_approvals {
       require_approver_justification = true
       steps {
         approvals_needed          = 1
-        approver_email_recipients = [var.group_approvers]
+        approver_email_recipients = var.pam_approver_emails
         approvers {
           principals = ["group:${var.group_approvers}"]
         }
@@ -56,11 +58,9 @@ resource "google_privileged_access_manager_entitlement" "prod_operator" {
     }
   }
 
-  # Notifications: PAM auto-notifies only Cloud Identity users/groups; our groups are consumer
-  # Google Groups, so both addresses are listed explicitly (found in T7-7: no email arrived).
-  # admin_email_recipients is notified when a grant becomes active (devops sees who got prod).
+  # Notified when a grant becomes active (normally the devops people, so they see who got prod).
   additional_notification_targets {
-    admin_email_recipients = [var.group_devops]
+    admin_email_recipients = var.pam_admin_emails
   }
 
   requester_justification_config {

@@ -13,15 +13,14 @@ prefix          = "acme"
 # Globally unique.
 state_bucket_name = "acme-iac-tfstate"
 
-devops_principal    = "group:acme-gcp-devops@googlegroups.com"
-# A group, so approvers change by group membership, not by re-applying stage 0.
-approver_principals = ["group:acme-gcp-approvers@googlegroups.com"]
+devops_principal = "group:gcp-devops@example.com"
+admin_principals = ["group:gcp-admins@example.com"]
 
-# A group; gets billing.viewer on the billing account (also the budget alert email recipient).
-billing_viewer_principals = ["group:acme-gcp-billing@googlegroups.com"]
+# Set after the first apply, once the admins group is seed project owner.
+# seed_creator_principal = "user:admin1@example.com"
 
-# Normally the Org Owner user(s) only.
-trigger_admin_principals = ["user:owner@example.com"]
+billing_viewer_principals = ["group:gcp-billing@example.com"]
+trigger_admin_principals  = ["group:gcp-admins@example.com"]
 
 # ---------------------------------------------------------------------------
 # GitHub part: first apply with enable_github = false; after building/pushing the

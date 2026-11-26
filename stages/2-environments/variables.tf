@@ -34,6 +34,16 @@ variable "group_approvers" {
   type        = string
 }
 
+variable "pam_approver_emails" {
+  description = "Individual user email addresses for PAM approval request notifications."
+  type        = list(string)
+}
+
+variable "pam_admin_emails" {
+  description = "Individual user email addresses for PAM notifications when a grant becomes active."
+  type        = list(string)
+}
+
 variable "group_developers" {
   description = "Email of the developers Google Group."
   type        = string

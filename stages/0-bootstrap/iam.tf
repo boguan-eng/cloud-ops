@@ -28,11 +28,6 @@ locals {
   billing_plan_bindings = { for r in local.billing_plan_roles : r => r }
   billing_apply_bind    = { for r in local.billing_apply_roles : r => r }
 
-  approver_roles = [
-    "roles/cloudbuild.builds.approver",
-    "roles/cloudbuild.builds.viewer",
-    "roles/logging.viewer",
-  ]
   devops_roles = [
     "roles/cloudbuild.builds.viewer",
     "roles/logging.viewer",
@@ -50,16 +45,22 @@ locals {
       for r in roles : "${sa}/${r}" => { sa = sa, role = r }
     }
   ]...)
-
-  approver_bindings = {
-    for pair in setproduct(var.approver_principals, local.approver_roles) :
-    "${pair[0]}|${pair[1]}" => { member = pair[0], role = pair[1] }
-  }
 }
 
 # ---------------------------------------------------------------------------
 # Organization / billing account (tier: org)
 # ---------------------------------------------------------------------------
+
+resource "google_organization_iam_member" "admin" {
+  for_each = {
+    for pair in setproduct(var.admin_principals, ["roles/resourcemanager.organizationAdmin", "roles/resourcemanager.projectCreator"]) :
+    "${pair[0]}|${pair[1]}" => { member = pair[0], role = pair[1] }
+  }
+
+  org_id = var.org_id
+  role   = each.value.role
+  member = each.value.member
+}
 
 resource "google_organization_iam_member" "org_plan" {
   for_each = local.org_plan_bindings
@@ -93,7 +94,15 @@ resource "google_billing_account_iam_member" "org_apply" {
   member             = "serviceAccount:${google_service_account.iac["org-apply"].email}"
 }
 
-# Billing group (viewer only; no billing.admin to anyone here).
+resource "google_billing_account_iam_member" "admin" {
+  for_each = toset(var.admin_principals)
+
+  billing_account_id = var.billing_account
+  role               = "roles/billing.admin"
+  member             = each.key
+}
+
+# Billing group is viewer only; billing.admin goes only to admin_principals.
 resource "google_billing_account_iam_member" "billing_viewer" {
   for_each = toset(var.billing_viewer_principals)
 
@@ -155,7 +164,7 @@ resource "google_artifact_registry_repository_iam_member" "sa_builder_reader" {
 }
 
 # ---------------------------------------------------------------------------
-# Humans on the seed project
+# Group access on the seed project
 # ---------------------------------------------------------------------------
 
 resource "google_project_iam_member" "devops" {
@@ -166,12 +175,25 @@ resource "google_project_iam_member" "devops" {
   member  = var.devops_principal
 }
 
-resource "google_project_iam_member" "approver" {
-  for_each = local.approver_bindings
+resource "google_project_iam_member" "admin_seed_owner" {
+  for_each = toset(var.admin_principals)
 
   project = google_project.seed.project_id
-  role    = each.value.role
-  member  = each.value.member
+  role    = "roles/owner"
+  member  = each.key
+}
+
+# Remove only the creator's automatic grant once the admins group is owner.
+# If a later resource in the same apply fails with permission denied due to IAM
+# propagation, re-run apply.
+resource "google_project_iam_member_remove" "seed_creator_owner" {
+  count = var.seed_creator_principal == "" ? 0 : 1
+
+  project = google_project.seed.project_id
+  role    = "roles/owner"
+  member  = var.seed_creator_principal
+
+  depends_on = [google_project_iam_member.admin_seed_owner]
 }
 
 # Cloud Build service agent: creating the 2nd-gen GitHub connection stores the GitHub OAuth
@@ -188,7 +210,7 @@ resource "google_project_iam_member" "cloudbuild_agent_secret_admin" {
 
 # Creating/updating a Cloud Build trigger that runs as a user-specified service account
 # requires iam.serviceAccounts.actAs on that account. Only the trigger admins (normally the
-# Org Owner) get it; devops and approvers cannot run code as the IaC SAs.
+# admins group) get it; devops cannot run code as the IaC SAs.
 resource "google_service_account_iam_member" "trigger_admin_act_as" {
   for_each = {
     for pair in setproduct(var.trigger_admin_principals, keys(local.service_accounts)) :

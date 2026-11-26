@@ -8,9 +8,12 @@ prefix          = "acme"
 # Only set when the derived project ID (<prefix>-app-<env>) is taken globally.
 # project_id_suffix = "-x1"
 
-group_devops     = "acme-gcp-devops@googlegroups.com"
-group_developers = "acme-gcp-developers@googlegroups.com"
-group_approvers  = "acme-gcp-approvers@googlegroups.com"
+group_devops     = "gcp-devops@example.com"
+group_developers = "gcp-developers@example.com"
+group_approvers  = "gcp-approvers@example.com"
+
+pam_approver_emails = ["pam-approver@example.com"]
+pam_admin_emails    = ["pam-admin@example.com"]
 
 # Project-tier IaC service accounts (stage 0 output `service_accounts`).
 iac_project_plan_sa  = "iac-project-plan@acme-iac-seed.iam.gserviceaccount.com"
