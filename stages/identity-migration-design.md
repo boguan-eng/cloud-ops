@@ -35,9 +35,36 @@ the chat; this file uses placeholders. Done so far: `<domain>` registered at Clo
 | Seed project `owner` | `group:gcp-admins`; the creator's user binding removed | Stage 0 (`google_project_iam_member` + `google_project_iam_member_remove`) |
 | Billing account `billing.admin` | `group:gcp-admins` (S2); old Gmail admin removed in teardown | Granted by hand in runbook 00 by the current Gmail billing admin; then declared in stage 0 |
 | actAs on IaC SAs (first applies, break-glass) | `group:gcp-admins` | Stage 0 `trigger_admin_principals` (value change only) |
-| Defaults granted at org creation (S3) | Removed unless required | Stage 1 (`google_organization_iam_member_remove`) or runbook 00 |
+| Defaults granted at org creation (S3: `projectCreator` + `billing.creator` on `domain:`, `organizationAdmin` on the creator) | Removed (none required) | Runbook 00 §5 by hand; checked by V1. Not declared in IaC: the provider has no org-level `_remove` resource (read 2026-11-25), and org IAM is non-authoritative (`_member`), so `<stage>-check` does not detect any added org binding anyway |
 
 Super admin itself is a Cloud Identity role on 2 accounts (Google requires accounts; R3/D6).
+
+### 2.1 Access layers and group granularity (user decision 2026-11-25)
+
+| Layer | Decides | Where |
+|---|---|---|
+| Change | Who may get GCP resources created or changed: author a PR, approve which paths | GitHub teams + CODEOWNERS |
+| Direct access | Who still acts in GCP as a person: bootstrap, break-glass, read, incident, billing | Cloud Identity groups |
+
+Org, folders and projects are created by pipeline SAs after merge (stage 0 is the only human
+apply, by the Org Owner). So groups follow the direct-access duties, not resource ownership:
+
+| Group | Direct duty in GCP |
+|---|---|
+| `gcp-admins` | Bootstrap, break-glass, Org Owner |
+| `gcp-billing` | Billing account admin (same members as admins now; separate duty, may move to finance) |
+| `gcp-devops` | Read config and logs; PAM request for prod in incidents |
+| `gcp-approvers` | PAM approval only (requester cannot self-approve) |
+| `gcp-developers` | Read nonprod resources and logs |
+
+Rules:
+- Granularity = duty × scope, not department. Add a group only for a distinct permission set.
+  Leads who approve are members of a duty group, not a group of their own. With several
+  products: `gcp-<product>-<duty>`.
+- Repos: one platform repo with CODEOWNERS path ownership (apps already have their own repos).
+  Split a product's infra into its own repo (own SA and state) only when a separate team must
+  not approve the platform's changes. The security boundary is each pipeline SA's permissions.
+- GitHub teams and Cloud Identity groups are maintained separately (no sync assumed).
 
 ## 3. Approval only in GitHub (R10)
 
