@@ -11,6 +11,7 @@ Placeholders: `<ORG>` = GitHub org name. Never commit real values.
 |---|---|---|
 | Who creates the org | The company owner (same person as the GCP Org Owner) → GitHub org **Owner** | Highest privilege stays with the accountable person; not used day to day |
 | Number of org owners | 2 (owner + backup) | A single lost owner account makes the org unrecoverable |
+| Owners vs authors | Accounts that author `cloud-ops` PRs (devops) are **members, not owners** | Org owners are the ruleset's only bypass actors; an author who is an owner could merge without review |
 | Two-factor authentication | **Required** for all members | Available on Free. GCP without a domain cannot enforce 2SV; GitHub can |
 | Who creates repos | **Owners only** | New repos are onboarded to GCP through a `cloud-ops` PR anyway; prevents ad-hoc public repos leaking data |
 | Visibility change, delete, transfer | Owners only | Prevents accidental publication or deletion |
