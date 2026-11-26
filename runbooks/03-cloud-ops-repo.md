@@ -157,4 +157,9 @@ curl -s "https://api.github.com/repos/${GITHUB_ORG}/cloud-ops/rules/branches/mai
 # required_status_checks (4 *-plan contexts, integration_id 10529 = Google Cloud Build)
 ```
 
+The API does not show the bypass list (acceptance 6). On the first PR under `stages/` by an
+author who is not an org owner, before any approval: the merge box shows that a code owner review
+is required, merging is blocked, and there is **no** "bypass rules" option. If the option is
+shown, the author is an org owner (runbook 01, *Owners vs authors*).
+
 **Next:** `04-stages-via-pipeline.md`.

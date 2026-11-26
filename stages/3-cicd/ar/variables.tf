@@ -31,7 +31,11 @@ variable "wif_pool" {
 
 variable "repos" {
   type        = map(string)
-  description = "GitHub repo name => numeric GitHub repo ID. The name is used as the Artifact Registry repository ID."
+  description = "GitHub repo name => numeric GitHub repo ID. The name is used as the Artifact Registry repository ID. Set here (reviewed in a PR), not in tfvars; both values are public on GitHub."
+  default = {
+    demo-api = "1465693741"
+    demo-web = "1465694056"
+  }
 
   validation {
     condition     = alltrue([for name in keys(var.repos) : can(regex("^[a-z]([a-z0-9-]*[a-z0-9])?$", name))])

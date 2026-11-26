@@ -3,12 +3,14 @@
 Last step of the from-zero bootstrap, run **once** by an admin (`admin1`, member of
 `gcp-admins`): creates the org IAM, environment folders and projects, WIF pools and Artifact
 Registry by running each stage's `<key>-apply` trigger. Applies run without an approval step
-(approval is the GitHub PR review; the stage code was reviewed in runbook 03). Afterwards the
+(approval is the GitHub PR review). These first applies have no PR: the admin's review is the
+local plan, compared with step **plan** of each apply build. Afterwards the
 admins operate only stage 0, tfvars-only changes and break-glass.
 
 **Who / which account:**
 - **Admin** (`gcp-admins`): tfvars, local read-only plans, starts the apply triggers and the
   check jobs (CLI). The admins group holds actAs on the IaC SAs, so it can start triggers.
+- **GitHub org Owner** (repo admin): app repo environment secrets in section 5.
 
 **Prerequisites:** runbooks 00–03 done (triggers exist, ruleset requires the plan checks);
 group `gcp-approvers` has at least one member (PAM approver); variables from runbook 02
@@ -89,28 +91,26 @@ run_check 1-org; sleep 240; check_result 1-org   # require SUCCESS
 
 `2-environments/terraform.tfvars`: `org_id`, `billing_account`, `prefix`, `group_devops`,
 `group_developers`, `group_approvers`, `pam_approver_emails` / `pam_admin_emails` (user
-addresses), `iac_project_plan_sa` / `iac_project_apply_sa` (stage 0 output
+addresses), `iac_project_plan_sa` / `iac_project_apply_sa` / `iac_org_apply_sa` (stage 0 output
 `service_accounts`). Set `project_id_suffix` if the default project IDs were ever used:
 deleted project IDs can never be reused.
 
+This stage also grants the project-tier IaC SAs their roles on the env folders, so stage 3 can
+run, and creates the PAM entitlement `prod-operator` on the prod folder. PAM uses the
+organization-level service agent, which no IaC resource can create; create it first
+(idempotent; it grants nothing by itself):
+
 ```bash
+gcloud beta services identity create --service=privilegedaccessmanager.googleapis.com \
+  --organization="$ORG_ID"
+# expect: Service identity created: service-org-<ORG_ID>@gcp-sa-pam.iam.gserviceaccount.com
 prepare 2-environments 2-environments   # only creates (folders, 2 projects, APIs, IAM)
 run_apply 2-environments
 # after SUCCESS:
 run_check 2-environments; sleep 240; check_result 2-environments   # require SUCCESS
 ```
 
-This also grants the project-tier IaC SAs their roles on the env folders, so stage 3 can
-run, and creates the PAM entitlement `prod-operator` on the prod folder. PAM uses the
-organization-level service agent, which no IaC resource can create; create it once before
-this apply (idempotent; it grants nothing by itself):
-
-```bash
-gcloud beta services identity create --service=privilegedaccessmanager.googleapis.com \
-  --organization="$ORG_ID"
-# expect: Service identity created: service-org-<ORG_ID>@gcp-sa-pam.iam.gserviceaccount.com
-```
- If project creation fails on quota: soft-deleted projects count against it for 30 days.
+If project creation fails on quota: soft-deleted projects count against it for 30 days.
 
 ## 3. Stage 3 — WIF pools
 
@@ -127,7 +127,8 @@ run_check 3-cicd-wif; sleep 240; check_result 3-cicd-wif   # require SUCCESS
 ## 4. Stage 3 — Artifact Registry
 
 `3-cicd/ar/terraform.tfvars`: project IDs as above, `region`, `wif_pool` (from
-`cd 3-cicd/wif && tofu output wif_pool`), `repos` (GitHub repo name → numeric repo ID).
+`cd 3-cicd/wif && tofu output wif_pool`). The app repos (`repos`) are in `3-cicd/ar/variables.tf`,
+changed by PR.
 
 ```bash
 prepare 3-cicd/ar 3-cicd-ar     # expect per repo: 2 repos + 2 writer + 1 prod-reads-nonprod, plus 2 APIs

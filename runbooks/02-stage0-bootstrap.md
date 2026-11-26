@@ -19,7 +19,7 @@ Never commit real values (`terraform.tfvars`, `backend.hcl` are git-ignored).
 ```bash
 export ORG_ID="123456789012"                  # gcloud organizations list
 export BILLING_ACCOUNT="000000-000000-000000" # gcloud billing accounts list
-export PREFIX="acme"
+export PREFIX="acme"                          # project IDs are globally unique; a deleted ID is never reusable
 export REGION="us-central1"
 export SEED_PROJECT="${PREFIX}-iac-seed"      # add a suffix only if the ID is taken
 export STATE_BUCKET="${PREFIX}-iac-tfstate"   # globally unique
@@ -53,12 +53,18 @@ devops member. The devops member then runs sections 1–5 with their own credent
 
 ## 1. Prerequisites check
 
+- Billing account active. If it is a **Free Trial**, check the remaining credit and days
+  (Console → **Billing** → **Overview**); if they may run out during the bootstrap, upgrade first
+  (when the trial ends, its resources stop).
 - Method A: the admin is in `gcp-admins`, which holds `organizationAdmin`, `projectCreator`
   and Billing Account Administrator (runbook 00 section 5).
 - OpenTofu ≥ 1.6 (`tofu version`; in Cloud Shell install the standalone binary to `$HOME/bin`,
   https://opentofu.org/docs/intro/install/standalone/), Docker.
 
 ```bash
+gcloud organizations get-iam-policy "$ORG_ID" --flatten='bindings[].members' \
+  --filter="bindings.members:group:gcp-admins@" --format='value(bindings.role)'
+# expect roles/resourcemanager.organizationAdmin and roles/resourcemanager.projectCreator
 gcloud billing accounts get-iam-policy "$BILLING_ACCOUNT" --flatten='bindings[].members' \
   --filter="bindings.members:group:gcp-admins@" --format='value(bindings.role)'
 # expect roles/billing.admin
