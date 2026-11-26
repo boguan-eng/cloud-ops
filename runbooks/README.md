@@ -6,9 +6,9 @@ Never commit real values (IDs, emails); fill them in shell variables or git-igno
 
 ```
  01 GitHub org            02 Stage 0 bootstrap        03 cloud-ops repo + pipeline      04 Stages 1–3 (last
- (GitHub org owner)  ──▶  (GCP Org Owner, or     ──▶  (GitHub org owner +          ──▶  bootstrap step, once)
-                           devops w/ temp grant)       GCP Org Owner)                    (Org Owner starts,
- org, 2FA, teams          seed project, state         push repo, ruleset,              approver approves)
+ (GitHub org owner)  ──▶  (GCP admin, or         ──▶  (GitHub org owner +          ──▶  bootstrap step, once)
+                           devops w/ temp grant)       GCP admin)                        (admin starts,
+ org, 2FA, teams          seed project, state         push repo, ruleset,              no approval step)
                           bucket, IaC SAs,            Cloud Build connection,          org IAM, folders,
                           builder image               triggers, check jobs,            projects, WIF, AR
                                                       required checks                  via apply triggers
@@ -17,20 +17,19 @@ Never commit real values (IDs, emails); fill them in shell variables or git-igno
 | # | Runbook | Who (account) | Result |
 |---|---|---|---|
 | 00 | [00-identity.md](00-identity.md) | Domain owner / first super admin | Mail forwarding, Cloud Identity, accounts, groups, organization, bootstrap roles to `gcp-admins` |
-| 01 | [01-github-org.md](01-github-org.md) | GitHub org owner | Org with 2FA, owner-only repo creation, teams `devops` / `developers` |
-| 02 | [02-stage0-bootstrap.md](02-stage0-bootstrap.md) | GCP Org Owner (method A) or a devops member with temporary elevation (method B) | Seed project, state bucket, builder image, 4 IaC service accounts |
-| 03 | [03-cloud-ops-repo.md](03-cloud-ops-repo.md) | GitHub org owner (browser) + GCP Org Owner (CLI) | Public `cloud-ops` with protected `main`; Cloud Build connection; 12 triggers, check runner SA, 4 daily check jobs |
-| 04 | [04-stages-via-pipeline.md](04-stages-via-pipeline.md) | GCP Org Owner (CLI) + approver (Console) | Org IAM, env folders/projects, WIF, AR built by the pipeline; last bootstrap step, run once. Afterwards all changes go through PR → plan → approval → apply |
+| 01 | [01-github-org.md](01-github-org.md) | GitHub org owner | Org with 2FA, owner-only repo creation, teams `devops` / `iac-reviewers` / `developers` |
+| 02 | [02-stage0-bootstrap.md](02-stage0-bootstrap.md) | GCP admin (method A) or a devops member with temporary elevation (method B) | Seed project, state bucket, builder image, 4 IaC service accounts |
+| 03 | [03-cloud-ops-repo.md](03-cloud-ops-repo.md) | GitHub org owner (browser) + GCP admin (CLI) | Public `cloud-ops` with protected `main`; Cloud Build connection; 12 triggers, check runner SA, 4 daily check jobs |
+| 04 | [04-stages-via-pipeline.md](04-stages-via-pipeline.md) | GCP admin (CLI) | Org IAM, env folders/projects, WIF, AR built by the pipeline; last bootstrap step, run once. Afterwards all changes go through PR → plan → code owner review → merge → apply |
 
-After setup, all changes are pull requests to `cloud-ops`; the Org Owner only operates stage 0
-and break-glass. Day-to-day runbooks:
+After setup, all changes are pull requests to `cloud-ops`; the admins only operate stage 0,
+tfvars-only changes and break-glass. Day-to-day runbooks:
 
 | Runbook | Who | Purpose |
 |---|---|---|
-| [ops/change-via-pr.md](ops/change-via-pr.md) | devops (author, reviewer) | Branch, PR, review (and its bypass rule), merge |
-| [ops/approve-apply.md](ops/approve-apply.md) | approver | Approve a `<stage>-apply` build |
-| [ops/change-approver.md](ops/change-approver.md) | Org Owner | Add or remove approvers |
-| [ops/run-checks.md](ops/run-checks.md) | devops (or Org Owner) | Daily/on-demand `<stage>-check` for drift and plan-SA read coverage |
+| [ops/change-via-pr.md](ops/change-via-pr.md) | devops (author) + `iac-reviewers` (reviewer) | Branch, PR, code owner review (Org Owner emergency bypass only), merge → apply |
+| [ops/change-approver.md](ops/change-approver.md) | admin | Add or remove PAM approvers |
+| [ops/run-checks.md](ops/run-checks.md) | devops (or admin) | Daily/on-demand `<stage>-check` for drift and plan-SA read coverage |
 | [ops/approve-pam-grant.md](ops/approve-pam-grant.md) | devops (requester) + approver | Incident-only prod write elevation (PAM), then reconcile by PR |
 
 Per-stage details are in `stages/<stage>/README.md` (stage 3 app setup: `stages/3-cicd/{wif,ar}/RUNBOOK.md`).
@@ -39,8 +38,9 @@ Per-stage details are in `stages/<stage>/README.md` (stage 3 app setup: `stages/
 
 | Persona | GitHub | GCP |
 |---|---|---|
-| Org Owner (non-technical, break-glass) | org Owner | Organization Owner; runs/approves stage 0 |
-| Approver (non-technical; member of the approvers group) | none | Cloud Build Approver on the seed project; PAM approver |
+| Admin (`admin1`/`admin2`, super admin, break-glass) | org Owner | Through `gcp-admins`: Organization Administrator, Project Creator, seed owner, Billing Account Administrator; runs stage 0 |
+| PAM approver (member of `gcp-approvers`) | none | PAM approver on the prod folder (incident access only) |
+| IaC reviewer | `iac-reviewers` team (code owner) | none needed; the review releases the apply |
 | Billing viewer (non-technical) | none | Billing Account Viewer |
 | devops | `devops` team (Write on `cloud-ops`) | read-only on prod and nonprod (no standing write); runs checks; prod PAM elevation for incidents only |
 | developers | `developers` team (app repos) | logs / monitoring / service status, read-only |

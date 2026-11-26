@@ -4,14 +4,14 @@
 
 | Area | Resources |
 |---|---|
-| Existing Organization Policy baseline | Imports six secure-by-default constraints: `iam.disableServiceAccountKeyCreation`, `iam.disableServiceAccountKeyUpload`, `iam.automaticIamGrantsForDefaultServiceAccounts`, `storage.uniformBucketLevelAccess`, `compute.setNewProjectDefaultToZonalDNSOnly`, and `compute.restrictProtocolForwardingCreationForTypes` (`INTERNAL` only). |
-| Additional constraints | Enforces `compute.skipDefaultNetworkCreation`, `storage.publicAccessPrevention`, `sql.restrictPublicIp`, and `compute.requireOsLogin`. Deferred: `compute.vmExternalIpAccess` and `gcp.resourceLocations`. `iam.allowedPolicyMemberDomains` is not used without a domain. Put any exception in the stage that owns the affected project. |
+| Existing Organization Policy baseline | Imports the seven defaults of the new Cloud Identity org (read 2026-11-25): `iam.allowedPolicyMemberDomains` (own customer ID only), `iam.managed.disableServiceAccountKeyCreation`, `iam.disableServiceAccountKeyUpload`, `iam.automaticIamGrantsForDefaultServiceAccounts`, `storage.uniformBucketLevelAccess`, `essentialcontacts.managed.allowedContactDomains` (own domain), and `compute.managed.restrictProtocolForwardingCreationForTypes` (`INTERNAL` only). |
+| Additional constraints | Enforces `compute.skipDefaultNetworkCreation`, `storage.publicAccessPrevention`, `sql.restrictPublicIp`, and `compute.requireOsLogin`. Deferred: `compute.vmExternalIpAccess` and `gcp.resourceLocations`.  Put any exception in the stage that owns the affected project. |
 | Cost visibility | One monthly budget for the whole billing account and one Monitoring email channel in the seed project for the billing group. The default current-spend thresholds are 50%, 90%, and 100%; default billing IAM recipients remain enabled. The budget alerts; it does not cap spend. |
-| IAM boundary | No standing org IAM binding for an `admins` group (removed after the second Org Owner accepted). Billing/approver group bindings are in stage 0, environment group bindings in stage 2; group membership is not an OpenTofu resource here. |
+| IAM boundary | The admins group's org roles and billing admin are in stage 0, environment group bindings in stage 2; group membership (Cloud Identity) is not an OpenTofu resource. The org's default `domain:` grants were removed by hand (runbook 00) because the provider has no org-level remove resource. |
 
 ## Concept and how it works
 
-- Devops opens a PR; Cloud Build plans as `iac-org-plan`. After devops review and merge to `main`, the approvers group authorizes the build and `iac-org-apply` plans again and applies. Logs stay in GCP. On a from-zero setup the Org Owner starts the first apply trigger once; it still requires approval.
+- Devops opens a PR; Cloud Build plans as `iac-org-plan`. After code owner review and merge to `main`, `iac-org-apply` plans again and applies. Logs stay in GCP. On a from-zero setup an admin starts the first apply trigger once.
 - State key: `tfstate/1-org`. Cloud Build fetches `terraform.tfvars` from `gs://<prefix>-iac-tfstate/tfvars/1-org/`. The seed project hosts the alert channel and is the Budget API quota project.
 - Run `1-org-check` after the first apply and use the daily/on-demand check for drift and plan read coverage. Budget email delivery to the consumer group is unverified (T7-12); billing viewers use the Console in the meantime.
 
@@ -34,15 +34,15 @@ Role IDs omit `roles/`.
 
 | Who | Role | Scope | Why |
 |---|---|---|---|
-| Org Owners (at least two) | `cloudowner.admin` (outside IAM); retained direct break-glass roles | Organization | Own stage 0 and start this stage's first pipeline apply; no routine stage 1 writes. |
-| Approvers group | `cloudbuild.builds.approver`, `cloudbuild.builds.viewer`, `logging.viewer` | Seed project | Inspect and approve the apply, not change policies or budgets. |
+| Admins group | `resourcemanager.organizationAdmin`, `resourcemanager.projectCreator` (stage 0) | Organization | Own stage 0 and start this stage's first pipeline apply; no routine stage 1 writes. |
+| IaC reviewers (GitHub) | Code owner review | `cloud-ops` repo | Review the PR and plan; the approval releases the apply. |
 | Billing group | `billing.viewer`; configured email recipient | Billing account; seed Monitoring channel | Read costs and budgets; cannot edit them. |
 | Devops group / `iac-check-runner` | `cloudscheduler.jobRunner` (devops); `buildTriggerRunner` + `iam.serviceAccountUser` on plan SAs only (runner) | Seed project and plan SAs | Devops reviews via PR and can run `1-org-check` without write access or SA impersonation. |
 | `iac-org-plan` | `orgpolicy.policyViewer`, `iam.securityReviewer`; `billing.viewer`; `monitoring.viewer`, `serviceusage.serviceUsageConsumer` | Organization; billing account; seed project, respectively | Refresh policy, org IAM where applicable, budget and channel without editing them. |
-| `iac-org-apply` | `orgpolicy.policyAdmin`; `billing.costsManager`; `monitoring.notificationChannelEditor`, `serviceusage.serviceUsageConsumer` | Organization; billing account; seed project, respectively | Import/manage policies and configure the budget and channel after approval. No billing IAM admin. |
+| `iac-org-apply` | `orgpolicy.policyAdmin`; `billing.costsManager`; `monitoring.notificationChannelEditor`, `serviceusage.serviceUsageConsumer` | Organization; billing account; seed project, respectively | Import/manage policies and configure the budget and channel after merge. No billing IAM admin. |
 
 The [stage 0 matrix](../0-bootstrap/README.md#permissions-matrix) lists the shared state, builder and logging roles. Developers and project-tier SAs have no stage 1 duties.
 
 ## Related runbooks
 
-[First applies](../../runbooks/04-stages-via-pipeline.md) · [Change by PR](../../runbooks/ops/change-via-pr.md) · [Approve an apply](../../runbooks/ops/approve-apply.md) · [Run checks](../../runbooks/ops/run-checks.md) · [Manage approvers](../../runbooks/ops/change-approver.md)
+[First applies](../../runbooks/04-stages-via-pipeline.md) · [Change by PR](../../runbooks/ops/change-via-pr.md) · [Run checks](../../runbooks/ops/run-checks.md) · [Manage PAM approvers](../../runbooks/ops/change-approver.md)

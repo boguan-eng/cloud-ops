@@ -1,18 +1,20 @@
 # Change cloud-ops via Pull Request
 
 Every change to `cloud-ops` (code or docs) goes through a PR; `main` is protected
-(1 approving review, no force push, no deletion). After setup, this is the only way
-infrastructure changes reach GCP.
+(1 approving review, code owner review for `/stages/` and `/.github/`, no force push, no
+deletion). The PR review is the only approval: merging a change under `stages/<stage>/` starts
+`<stage>-apply` immediately, with no further approval in GCP (R10, identity migration). After
+setup, this is the only way infrastructure changes reach GCP.
 
 **Who:**
 | Step | Who | Account |
 |---|---|---|
 | Branch, commit, push, open PR | Author | a `devops` team member |
-| Review and approve on GitHub | Reviewer | a **different** `devops` member (GitHub forbids approving your own PR) |
+| Review and approve on GitHub | Reviewer | a member of the `iac-reviewers` team (code owner) who is **not** the author (GitHub forbids approving your own PR) |
 | Merge | Author or reviewer | `devops` member |
-| Approve the apply build in GCP | Approver | member of the approvers group ([approve-apply.md](approve-apply.md)) |
 
-**Prerequisites:** both GitHub accounts are in the `devops` team (Write) and have 2FA, and
+**Prerequisites:** the author is in the `devops` team, the reviewer in `iac-reviewers` (both
+teams have Write on the repo; a code owner team needs it explicitly), both have 2FA, and
 both have GitHub **Settings → Emails → Keep my email addresses private** and **Block command
 line pushes that expose my email** on. A merge in the web UI is authored by the merging
 account; without the private setting its real email becomes public in `main`'s history.
@@ -40,7 +42,7 @@ What happens automatically:
 - If the PR touches `stages/<stage>/` or `stages/cloudbuild/`, the `<stage>-plan` trigger runs.
   The PR shows a Cloud Build check with status only; the plan output is in GCP:
   Console → seed project → **Cloud Build** → **History** (region `us-central1`) → the build →
-  step `plan` log. Viewing needs Cloud Build Viewer + Logs Viewer (devops, approvers).
+  step `plan` log. Viewing needs Cloud Build Viewer + Logs Viewer (devops).
 - Docs-only PRs (`runbooks/`, `*.md` outside stage dirs) run no build.
 
 ### Public exposure check (every PR with a build)
@@ -60,17 +62,15 @@ curl -s "https://api.github.com/repos/<ORG>/cloud-ops/commits/${SHA}/check-runs"
 
 Sign in to GitHub with the reviewer account → the PR → **Files changed** → read the diff
 (and, for stage changes, the plan in Cloud Build) → **Review changes** → **Approve** →
-**Submit review**.
+**Submit review**. For a stage change, the approval releases the apply: compare the plan with the
+`Expected plan: X to add, Y to change, Z to destroy` line the author wrote in the description.
 
-### Review bypass (decision B)
+### Emergency bypass (Org Owner only)
 
-The ruleset lets an authorized account merge without the required review. Allowed **only**:
-- for a **docs-only** PR (no file under `stages/`), or
-- for **personal practice** (no effect on GCP).
-
-Changes under `stages/` must **always** be reviewed and approved by another `devops` member;
-no bypass, even when the plan looks harmless. If you bypass, the PR description must contain
-one line: `Bypass: <reason>` (e.g. `Bypass: docs-only, runbook wording`).
+The ruleset's bypass list contains only **Organization admin**, for pull requests only. The
+author cannot bypass. An Org Owner may merge without the required review only in an emergency
+(for example the reviewer is unreachable during an incident). The PR description must then
+contain one line: `Bypass: <reason>`, and a reviewer reviews the merged change afterwards.
 
 ## 4. Merge
 
@@ -87,27 +87,21 @@ git log -1 --format='%ae | %ce'   # expect: <id>+<login>@users.noreply.github.co
 Any other address in the output is a leak of personal data: report it to the Org Owner.
 Pushed history is not rewritten without the Org Owner's explicit decision.
 
-Post-merge approval check (every PR, in particular one merged with a bypass):
+Post-merge review check (every PR):
 
 ```bash
 curl -s https://api.github.com/repos/<org>/<repo>/pulls/<N>/reviews \
   | python3 -c 'import json,sys; print([(r["state"]) for r in json.load(sys.stdin)])'
-# expect: ["APPROVED"] for any PR touching stages/
-# []  = merged without review (bypassed): the PR description must have "Bypass: <reason>"
-#       and the reason must be docs-only or personal practice
+# expect: ["APPROVED"] (from a code owner for any PR touching stages/ or .github/)
+# []  = merged without review: only valid as an Org Owner emergency bypass with
+#       "Bypass: <reason>" in the PR description
 ```
 
-A bypassed PR under `stages/`, or a bypass without a stated reason, is a violation: report it
-to the Org Owner and ask a reviewer to review the merged change afterwards.
+A merge without review that is not an Org Owner emergency with a stated reason is a violation:
+report it to the Org Owners and ask a reviewer to review the merged change afterwards.
 
-## 5. Approver: approve the apply (only if stages changed)
+## 5. After merge (only if stages changed)
 
-Merging a change under `stages/<stage>/` starts `<stage>-apply`, which waits for approval.
-No notification is configured for pending approvals; the author tells the approver, who
-follows [approve-apply.md](approve-apply.md). Write the expected plan summary
-(`Plan: X to add, Y to change, Z to destroy`) in the PR description so the approver can
-compare it.
-
-After the build succeeds, the change is live; devops can confirm no drift with the
-`<stage>-check` job ([run-checks.md](run-checks.md)). Approvals are recorded in the seed project's
-Admin Activity audit log (`ApproveBuild`).
+Merging a change under `stages/<stage>/` starts `<stage>-apply` (no approval step). Wait for
+**Success** in Cloud Build **History**; on failure, fix forward with a new PR.
+Then confirm no drift with the `<stage>-check` job ([run-checks.md](run-checks.md)).

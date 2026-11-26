@@ -1,11 +1,11 @@
 # 03 — cloud-ops Repository and Pipeline
 
 Publishes `cloud-ops`, protects `main`, connects it to Cloud Build and creates the per-stage
-triggers (PR → plan; merge to `main` → apply after approval; manual check) and the daily
+triggers (PR → plan; merge to `main` → apply, no approval step; manual check) and the daily
 check jobs.
 
-**Who:** GitHub org **Owner** (browser, sections 1–3 and the browser part of 4) and the GCP
-**Org Owner** (CLI, sections 4–5).
+**Who:** GitHub org **Owner** (browser, sections 1–3 and the browser part of 4) and a GCP
+**admin** (`gcp-admins`, CLI, sections 4–5).
 **Prerequisites:** runbooks 01 and 02 done; variables from runbook 02 section 0.
 **Next:** `04-stages-via-pipeline.md`.
 
@@ -30,7 +30,9 @@ export CONNECTION="github"         # Cloud Build connection name
 ## 2. Repository access (GitHub org Owner)
 
 Repo → **Settings** → left menu *Access* → **Collaborators and teams** → **Add teams** →
-`devops` → role **Write** → **Add selection**. Do not add `developers`.
+`devops` → role **Write** → **Add selection**; repeat for `iac-reviewers` → **Write** (a code
+owner team needs explicit Write, or its review does not count). Do not add `developers`.
+`.github/CODEOWNERS` assigns `/stages/` and `/.github/` to `iac-reviewers`.
 
 ## 3. Protect `main` (GitHub org Owner)
 
@@ -39,17 +41,19 @@ Repo → **Settings** → **Rules** → **Rulesets** → **New ruleset** → **N
   **Include default branch**.
 - Check **Restrict deletions**, **Block force pushes**.
 - Check **Require a pull request before merging**: required approvals **1**,
-  **Dismiss stale pull request approvals when new commits are pushed**.
-- Bypass list: **Organization admin** only. Use only per `ops/change-via-pr.md` "Review bypass" (docs-only or practice PRs, reason stated; never `stages/` changes).
+  **Dismiss stale pull request approvals when new commits are pushed**,
+  **Require review from Code Owners**.
+- Bypass list: **Organization admin** only, mode **For pull requests only** (Org Owner
+  emergency, `Bypass: <reason>` in the PR; see `ops/change-via-pr.md`). No other actor.
 - **Create**.
 
-With a single devops member, the PR author cannot approve their own PR: merging needs another
-member's review or the owner bypass.
+The PR review is the only approval of an infrastructure change (applies run on merge). The
+author cannot approve their own PR, so `iac-reviewers` needs a member other than the author.
 
-## 4. Cloud Build ↔ GitHub connection (GCP Org Owner CLI + GitHub org Owner browser)
+## 4. Cloud Build ↔ GitHub connection (GCP admin CLI + GitHub org Owner browser)
 
 Two identities are involved:
-- **GCP side** (CLI): the Org Owner creates the connection in the seed project. Stage 0 already
+- **GCP side** (CLI): an admin creates the connection in the seed project. Stage 0 already
   gave the Cloud Build service agent the Secret Manager permission it needs; without it the
   command fails with "could not assert Secret Manager permissions".
 - **GitHub side** (browser, cannot be scripted): a GitHub org **Owner** authorizes the Cloud
@@ -65,7 +69,7 @@ gcloud builds connections describe "$CONNECTION" --region="$REGION" --project="$
   --format='value(installationState.actionUri)'
 ```
 
-Open the URL in a browser: choose the Google account of the Org Owner, then on GitHub
+Open the URL in a browser: choose the Google account of the admin, then on GitHub
 authorize and install the app as above. The page ends with "Connection configured
 successfully".
 
@@ -74,7 +78,7 @@ gcloud builds connections describe "$CONNECTION" --region="$REGION" --project="$
   --format='value(installationState.stage)'      # expect COMPLETE
 ```
 
-## 5. Create the triggers (GCP Org Owner)
+## 5. Create the triggers (GCP admin)
 
 In `stages/0-bootstrap/terraform.tfvars` set:
 
@@ -123,7 +127,7 @@ for t in json.load(sys.stdin):
         t.get("serviceAccount","").split("/")[-1].split("@")[0])'
 ```
 
-Expected: 12 triggers. `*-plan`: PR, approval False, plan SA. `*-apply`: PUSH, approval True,
+Expected: 12 triggers. `*-plan`: PR, approval False, plan SA. `*-apply`: PUSH, approval False,
 apply SA. `*-check`: manual, approval False, plan SA (started by the Scheduler jobs, see runbook 04
 and [ops/run-checks.md](ops/run-checks.md)). All `logsToGitHub=UNSET` (build logs stay in Cloud Logging).
 
@@ -140,7 +144,7 @@ for sa in iac-org-plan iac-project-plan iac-org-apply iac-project-apply; do
     --filter='bindings.role=roles/iam.serviceAccountUser' --format='value(bindings.members)'
 done
 # expect: iac-check-runner listed under iac-org-plan and iac-project-plan ONLY;
-# under the two apply SAs only the trigger admins (Org Owner), never iac-check-runner
+# under the two apply SAs only the trigger admins (group:gcp-admins), never iac-check-runner
 gcloud scheduler jobs list --location="$REGION" --project="$SEED_PROJECT" \
   --format='table(name.basename(),state,schedule,timeZone)'
 # expect 4 jobs <key>-check, ENABLED, schedule "0 3 * * *", Asia/Taipei
@@ -148,7 +152,8 @@ gcloud scheduler jobs list --location="$REGION" --project="$SEED_PROJECT" \
 
 ```bash
 curl -s "https://api.github.com/repos/${GITHUB_ORG}/cloud-ops/rules/branches/main"
-# expect rule types: deletion, non_fast_forward, pull_request (required_approving_review_count 1),
+# expect rule types: deletion, non_fast_forward, pull_request (required_approving_review_count 1,
+# require_code_owner_review true),
 # required_status_checks (4 *-plan contexts, integration_id 10529 = Google Cloud Build)
 ```
 

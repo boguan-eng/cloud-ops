@@ -10,7 +10,7 @@
 ## Concept and how it works
 
 - Stage 2 supplies the projects and folder IAM. Apply `wif/` first; its pool resource names are inputs to `ar/`. Provider and registry outputs are handed to the app repo privately, not committed.
-- For each stack, Cloud Build plans the devops PR as `iac-project-plan`. After review and merge to `main`, the approvers group authorizes a fresh plan and apply as `iac-project-apply`. Logs stay in GCP. From zero, the Org Owner starts the first apply trigger for each stack once, still behind approval. Run the corresponding `<key>-check` after the first apply and to check for drift or missing read access.
+- For each stack, Cloud Build plans the devops PR as `iac-project-plan`. After code owner review and merge to `main`, `iac-project-apply` plans again and applies. Logs stay in GCP. From zero, an admin starts the first apply trigger for each stack once. Run the corresponding `<key>-check` after the first apply and to check for drift or missing read access.
 - The GitHub Actions **app** pipeline uses short-lived federated credentials directly against Artifact Registry, not the infrastructure apply SA. Nonprod accepts the `nonprod` GitHub environment on `main`; prod accepts the `prod` environment on `v*` tags. The provider checks the numeric GitHub org ID, and repo IAM checks the numeric repository ID. Each environment has its own pool, so nonprod identity configuration cannot grant prod trust. A prod workflow can promote the matching nonprod image instead of rebuilding it.
 
 | Stack | GCS state key | `terraform.tfvars` directory |
@@ -38,11 +38,11 @@ Role IDs omit `roles/`.
 
 | Who | Role | Scope | Why |
 |---|---|---|---|
-| Org Owner | `cloudowner.admin` (outside IAM), `iam.serviceAccountUser` on IaC SAs | Organization; IaC SAs | Starts the first applies during bootstrap; otherwise break-glass. |
-| Approvers group | `cloudbuild.builds.approver`, `cloudbuild.builds.viewer`, `logging.viewer` | Seed project | Approve infrastructure changes, not app pushes. |
+| Admins group | `iam.serviceAccountUser` on IaC SAs (stage 0) | IaC SAs | Starts the first applies during bootstrap; otherwise break-glass. |
+| IaC reviewers (GitHub) | Code owner review | `cloud-ops` repo | Approve infrastructure changes by PR review, not app pushes. |
 | Devops group | `viewer`, `iam.workloadIdentityPoolViewer`; `cloudbuild.builds.viewer`, `logging.viewer`, `cloudscheduler.jobRunner` | Both environment folders; seed project, respectively | Inspect WIF and plans, change IaC by PR, and start check jobs. No standing repo write; prod PAM is incident-only (see [stage 2](../2-environments/README.md)). |
 | `iac-project-plan` | `viewer`, `iam.securityReviewer` | Both environment folders (inherited into projects) | Refresh APIs, pools/providers, registry repos and repo IAM. |
-| `iac-project-apply` | `iam.workloadIdentityPoolAdmin`, `artifactregistry.admin`, `serviceusage.serviceUsageAdmin` | Both environment folders (inherited into projects) | Manage WIF, repositories and repo IAM, and enable APIs after approval. |
+| `iac-project-apply` | `iam.workloadIdentityPoolAdmin`, `artifactregistry.admin`, `serviceusage.serviceUsageAdmin` | Both environment folders (inherited into projects) | Manage WIF, repositories and repo IAM, and enable APIs after merge. |
 | `iac-check-runner` | `buildTriggerRunner`; `iam.serviceAccountUser` | Seed project; plan SAs only | Starts check builds but cannot act as either apply SA. |
 | Federated GitHub repo identity | `artifactregistry.writer` | Matching repository in its own environment | Push images for that app only. |
 | Matching prod federated identity | `artifactregistry.reader` | Same app's nonprod repository | Read the source image for promotion to prod. |
@@ -51,4 +51,4 @@ The [stage 0 matrix](../0-bootstrap/README.md#permissions-matrix) covers shared 
 
 ## Related runbooks
 
-[First applies and app handoff](../../runbooks/04-stages-via-pipeline.md) · [Change by PR](../../runbooks/ops/change-via-pr.md) · [Approve an apply](../../runbooks/ops/approve-apply.md) · [Run checks](../../runbooks/ops/run-checks.md)
+[First applies and app handoff](../../runbooks/04-stages-via-pipeline.md) · [Change by PR](../../runbooks/ops/change-via-pr.md) · [Run checks](../../runbooks/ops/run-checks.md)

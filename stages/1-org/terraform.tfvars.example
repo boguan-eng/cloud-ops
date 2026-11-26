@@ -3,11 +3,15 @@
 
 org_id = "123456789012"
 
+# Imported organization policies (org-policy.tf)
+allowed_policy_member_customer_ids = ["C0xxxxxxx"]
+allowed_contact_domains            = ["@example.com"]
+
 # Budget (budget.tf)
 billing_account     = "AAAAAA-BBBBBB-CCCCCC"
 seed_project_id     = "acme-seed-0000"
 budget_amount       = 4000 # whole units of budget_currency
-billing_alert_email = "acme-gcp-billing@googlegroups.com"
+billing_alert_email = "billing-person@example.com"
 
 # ---------------------------------------------------------------------------
 # Optional overrides. Defaults live in budget.tf. An override REPLACES the whole default.

@@ -2,6 +2,12 @@
 
 Requirements: `stages/foundation-requirements.md`.
 
+> **Superseded in part (identity migration, 2026-11-25):** the organization moved to a Cloud
+> Identity domain; people act through Cloud Identity groups (no IAM on an individual), and
+> infrastructure changes are approved only by the GitHub code owner review (applies run on
+> merge; no Cloud Build approval, no approver roles on the seed project; approvers keep only
+> PAM). Where this document says otherwise, `stages/identity-migration-design.md` applies.
+
 ## Verified Facts (2026-11-24, official docs / read-only queries)
 
 | Topic | Fact | Design impact |

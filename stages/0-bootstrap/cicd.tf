@@ -63,7 +63,7 @@ resource "google_cloudbuild_trigger" "apply" {
   project         = google_project.seed.project_id
   location        = var.region
   name            = "${each.key}-apply"
-  description     = "tofu apply for ${each.value.dir} on push to main (approval required)"
+  description     = "tofu apply for ${each.value.dir} on push to main (approval = GitHub PR review)"
   filename        = "stages/cloudbuild/apply.yaml"
   service_account = google_service_account.iac["${each.value.tier}-apply"].id
   included_files  = ["${each.value.dir}/**", "stages/cloudbuild/**"]
@@ -74,10 +74,6 @@ resource "google_cloudbuild_trigger" "apply" {
     push {
       branch = "^main$"
     }
-  }
-
-  approval_config {
-    approval_required = true
   }
 
   substitutions = {

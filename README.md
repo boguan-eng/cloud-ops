@@ -6,8 +6,8 @@ Cloud Ops is a hands-on implementation of Google Cloud Professional Cloud DevOps
 
 | When | How it works |
 |---|---|
-| Bootstrap and break-glass | The Org Owner handles stage 0 locally and starts the first applies of stages 1–3 once from `main`; those applies still need a separate approver. Outside bootstrap, the Org Owner intervenes only for break-glass. |
-| Routine infrastructure changes | DevOps opens a PR → Cloud Build runs a plan → a different DevOps member reviews → merge to `main` → a separate approver approves the Cloud Build apply. DevOps has no standing write access to either environment. |
+| Bootstrap and break-glass | An admin (member of `gcp-admins`, a Cloud Identity group of the two super admins) handles stage 0 locally and starts the first applies of stages 1–3 once from `main`. Outside bootstrap, the admins handle tfvars-only changes and break-glass. |
+| Routine infrastructure changes | DevOps opens a PR → Cloud Build runs a plan → a member of the `iac-reviewers` code owner team (not the author) approves → merge to `main` → the apply runs. The PR review is the only approval; only an Org Owner may bypass it, in an emergency, recorded in the PR. DevOps has no standing write access to either environment. |
 | Production incident | Direct production writes by DevOps require an approved, time-limited `prod-operator` Privileged Access Manager (PAM) grant. Reconcile the change by PR, then run the affected checks and verify no diff. |
 | Drift and read coverage | Four daily Cloud Scheduler jobs start Cloud Build checks on `main` as the plan service accounts (SAs). A check fails on a diff or error. DevOps can also run the jobs on demand. |
 
@@ -16,10 +16,10 @@ Cloud Ops is a hands-on implementation of Google Cloud Professional Cloud DevOps
 | Chapter / scenario | Stage or runbook |
 |---|---|
 | Foundation: bootstrap from zero | [Runbook index](runbooks/README.md) · [01 GitHub org](runbooks/01-github-org.md) → [02 Stage 0 bootstrap](runbooks/02-stage0-bootstrap.md) → [03 Repo and pipeline](runbooks/03-cloud-ops-repo.md) → [04 First pipeline applies](runbooks/04-stages-via-pipeline.md) |
-| Change infrastructure | [Change via PR](runbooks/ops/change-via-pr.md) · [Approve an apply](runbooks/ops/approve-apply.md) |
+| Change infrastructure | [Change via PR](runbooks/ops/change-via-pr.md) |
 | Prod incident access | [Request and approve a PAM grant](runbooks/ops/approve-pam-grant.md) |
 | Drift checks | [Run stage checks](runbooks/ops/run-checks.md) |
-| Change approver | [Add or remove an approver](runbooks/ops/change-approver.md) |
+| Change PAM approver | [Add or remove a PAM approver](runbooks/ops/change-approver.md) |
 | Stage 0: seed project and pipeline | [Bootstrap](stages/0-bootstrap/README.md) |
 | Stage 1: organization policy and billing budget | [Organization](stages/1-org/README.md) |
 | Stage 2: prod and nonprod folders, projects, and access | [Environments](stages/2-environments/README.md) |
@@ -51,8 +51,9 @@ Predefined role IDs below omit the `roles/` prefix. All four IaC SAs have `loggi
 
 | Persona | Where | Roles | How they act |
 |---|---|---|---|
-| Org Owners (primary and backup) | GCP organization; billing account and IaC SAs for bootstrap | Organization Owner (`cloudowner.admin`, granted outside IAM); bootstrap operator also needs `resourcemanager.organizationAdmin` and `billing.admin`; designated trigger admin has `iam.serviceAccountUser` on IaC SAs | Handle stage 0 and start the first pipeline applies; otherwise break-glass. Manage approver group membership. |
-| Approvers group | Seed project; prod folder | Seed: `cloudbuild.builds.approver`, `cloudbuild.builds.viewer`, `logging.viewer`; prod folder: `resourcemanager.folderViewer` and designated PAM approver | Review plans and approve applies in Cloud Build; approve incident grants in PAM. Separate from DevOps and developers. |
+| Admins group (`gcp-admins`: the two super admins) | Organization; seed project; billing account; IaC SAs | Org: `resourcemanager.organizationAdmin`, `resourcemanager.projectCreator`; seed: `owner`; billing: `billing.admin`; IaC SAs: `iam.serviceAccountUser` | Handle stage 0, the first pipeline applies and tfvars-only changes; otherwise break-glass. Manage Cloud Identity users and groups. No IAM is bound to an individual. |
+| Approvers group | Prod folder | `resourcemanager.folderViewer` and designated PAM approver | Approve incident grants in PAM only. Separate from DevOps and developers. |
+| IaC reviewers (GitHub team `iac-reviewers`) | `cloud-ops` repo | Write; code owner of `/stages/` and `/.github/` | Review the PR and plan; the approval releases the apply. |
 | Billing group | Billing account | `billing.viewer`; designated budget alert recipient | View costs and the budget without administering billing. |
 | DevOps group | Seed project; prod and nonprod folders | Seed: `cloudbuild.builds.viewer`, `logging.viewer`, `cloudscheduler.jobRunner`; both folders: `viewer`, `iam.workloadIdentityPoolViewer`; prod only: eligible for `prod-operator` | Change infrastructure via reviewed PRs, read plans, and run Scheduler jobs on demand. Request temporary prod writes for incidents only. |
 | Developers group | Prod and nonprod folders | `logging.viewer`, `monitoring.viewer`, `serviceusage.serviceUsageConsumer`, `run.viewer`, `cloudtrace.user`, `errorreporting.viewer` | Read logs, metrics, and service status; no service writes. `cloudtrace.user` can edit trace scopes. |

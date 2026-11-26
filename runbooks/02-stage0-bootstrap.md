@@ -4,12 +4,12 @@ Creates the seed project, state bucket, builder image repository and the 4 IaC s
 accounts. Run **once**, by a human. Code: `stages/0-bootstrap/`. Design:
 `stages/foundation-design.md`.
 
-**Who:** method A — the GCP **Org Owner**; method B — a named **devops member** under a
-temporary grant from the Org Owner (sections B1 and B2 wrap the common steps).
-**Prerequisites:** runbook 01 done; Google groups `<prefix>-gcp-devops`, `<prefix>-gcp-approvers`,
-`<prefix>-gcp-developers` and `<prefix>-gcp-billing` exist (groups.google.com, created by the Org Owner;
-IAM rejects a group that does not exist, so check each address against the tfvars) with the settings in
-[ops/change-approver.md](ops/change-approver.md) section 1.
+**Who:** method A — an **admin** (`admin1`; the `gcp-admins` group holds the org bootstrap
+roles and billing admin from runbook 00 section 5); method B — a named **devops member** under a
+temporary grant from an admin (sections B1 and B2 wrap the common steps).
+**Prerequisites:** runbooks 00 and 01 done; Cloud Identity groups `gcp-admins`, `gcp-devops`,
+`gcp-approvers`, `gcp-developers` and `gcp-billing` exist (runbook 00 section 3; IAM rejects a
+group that does not exist, so check each address against the tfvars).
 **Next:** [03-cloud-ops-repo.md](03-cloud-ops-repo.md).
 
 Never commit real values (`terraform.tfvars`, `backend.hcl` are git-ignored).
@@ -23,7 +23,6 @@ export PREFIX="acme"
 export REGION="us-central1"
 export SEED_PROJECT="${PREFIX}-iac-seed"      # add a suffix only if the ID is taken
 export STATE_BUCKET="${PREFIX}-iac-tfstate"   # globally unique
-export OWNER_USER="owner@example.com"         # the Org Owner
 export TOFU_VERSION="1.13.1"                  # = TOFU_VERSION in builder/Dockerfile
 export BUILDER_IMAGE="${REGION}-docker.pkg.dev/${SEED_PROJECT}/iac-builder/tofu:${TOFU_VERSION}"
 # method B only
@@ -32,7 +31,7 @@ export END_UTC="2030-01-01T12:00:00Z"         # temp grant expiry (UTC), e.g. no
 export COND="expression=request.time < timestamp('${END_UTC}'),title=stage0-temp"
 ```
 
-## B1. (Method B only) Org Owner grants temporary roles
+## B1. (Method B only) Admin grants temporary roles
 
 | Where | Role | Why |
 |---|---|---|
@@ -49,18 +48,19 @@ gcloud billing accounts add-iam-policy-binding "$BILLING_ACCOUNT" \
   --member="user:${DEVOPS_MEMBER}" --role=roles/billing.admin
 ```
 
-`trigger_admin_principals` in `terraform.tfvars` must list the **Org Owner**, not the devops
-member. The devops member then runs sections 1–5 with their own credentials, before `$END_UTC`.
+`trigger_admin_principals` in `terraform.tfvars` must list `group:gcp-admins@<domain>`, not the
+devops member. The devops member then runs sections 1–5 with their own credentials, before `$END_UTC`.
 
 ## 1. Prerequisites check
 
-- Method A: the Org Owner is Organization Owner/Administrator and Billing Account Administrator.
+- Method A: the admin is in `gcp-admins`, which holds `organizationAdmin`, `projectCreator`
+  and Billing Account Administrator (runbook 00 section 5).
 - OpenTofu ≥ 1.6 (`tofu version`; in Cloud Shell install the standalone binary to `$HOME/bin`,
   https://opentofu.org/docs/intro/install/standalone/), Docker.
 
 ```bash
 gcloud billing accounts get-iam-policy "$BILLING_ACCOUNT" --flatten='bindings[].members' \
-  --filter="bindings.members:user:$(gcloud config get-value account)" --format='value(bindings.role)'
+  --filter="bindings.members:group:gcp-admins@" --format='value(bindings.role)'
 # expect roles/billing.admin
 ```
 
@@ -69,9 +69,10 @@ gcloud billing accounts get-iam-policy "$BILLING_ACCOUNT" --flatten='bindings[].
 ```bash
 cd cloud-ops/stages/0-bootstrap
 cp terraform.tfvars.example terraform.tfvars
-# Fill: org_id, billing_account, prefix, state_bucket_name, devops_principal ("group:..."),
-# approver_principals (["group:<prefix>-gcp-approvers@..."]), trigger_admin_principals (["user:<OWNER_USER>"]),
-# enable_github = false.
+# Fill: org_id, billing_account, prefix, state_bucket_name, devops_principal ("group:gcp-devops@<domain>"),
+# admin_principals and trigger_admin_principals (["group:gcp-admins@<domain>"]),
+# billing_viewer_principals (["group:gcp-billing@<domain>"]), enable_github = false.
+# Leave seed_creator_principal unset until section 4a.
 gcloud auth application-default login
 ```
 
@@ -96,6 +97,23 @@ rm -f terraform.tfstate terraform.tfstate.backup
 gcloud storage cp terraform.tfvars "gs://${STATE_BUCKET}/tfvars/0-bootstrap/terraform.tfvars"
 ```
 
+## 4a. (Method A) Remove the creator's owner binding
+
+Creating the seed project made your user its `roles/owner`; the `gcp-admins` group is owner now
+(R4: no IAM on an individual). Set `seed_creator_principal = "user:<your account>"` in
+`terraform.tfvars`, then:
+
+```bash
+tofu apply            # expect: 1 to add (google_project_iam_member_remove), 0 to change, 0 to destroy
+gcloud projects get-iam-policy "$SEED_PROJECT" --flatten='bindings[].members' \
+  --filter='bindings.members:user:' --format='value(bindings.role,bindings.members)'
+# expect: nothing
+gcloud storage cp terraform.tfvars "gs://${STATE_BUCKET}/tfvars/0-bootstrap/terraform.tfvars"
+```
+
+If an apply fails with permission denied right after this, IAM is still propagating the group
+grant: wait a minute and run it again.
+
 ## 5. Build and push the builder image
 
 Tags are immutable: tag = OpenTofu version (bump `builder/Dockerfile` and the tag together).
@@ -109,7 +127,7 @@ docker push "$BUILDER_IMAGE"
 If the gcloud credential helper uses an account without access, log in with a token instead:
 `gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://${REGION}-docker.pkg.dev`.
 
-## B2. (Method B only) Org Owner removes the elevation
+## B2. (Method B only) Admin removes the elevation
 
 Do not wait for expiry; the billing role never expires.
 
@@ -142,6 +160,9 @@ gcloud organizations get-iam-policy "$ORG_ID" --flatten='bindings[].members' \
 gcloud billing accounts get-iam-policy "$BILLING_ACCOUNT" --flatten='bindings[].members' \
   --filter='bindings.members:serviceAccount:iac-' --format='table(bindings.members,bindings.role)'
 # iac-org-plan: billing.viewer; iac-org-apply: billing.user, billing.costsManager
+gcloud organizations get-iam-policy "$ORG_ID" --flatten='bindings[].members' \
+  --format='value(bindings.members)' | grep -E '^(user|domain):'
+# expect: nothing (org roles of people are held through gcp-admins)
 gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${SEED_PROJECT}/iac-builder" --include-tags
 ```
 

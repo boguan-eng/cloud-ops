@@ -6,14 +6,14 @@
 |---|---|
 | Seed project | Billing link, required APIs, and project deletion protection. |
 | State and builder | Versioned GCS state bucket with uniform bucket-level access and public access prevention; immutable-tag Docker Artifact Registry for the OpenTofu builder. The operator builds and pushes the image separately. |
-| IaC pipeline | Four IaC service accounts (SAs) and their IAM; a Cloud Build repository link, four PR plan triggers, four approval-gated apply triggers, and four check triggers. The GitHub App connection and `main` protection are set up separately. |
+| IaC pipeline | Four IaC service accounts (SAs) and their IAM; a Cloud Build repository link, four PR plan triggers, four apply triggers (run on merge), and four check triggers. The GitHub App connection and `main` protection are set up separately. |
 | Drift checks | `iac-check-runner`, its custom Cloud Build role and plan-SA bindings, and four daily Cloud Scheduler jobs. |
 
 ## Concept and how it works
 
-- The **Org Owner** runs OpenTofu and gcloud locally (Cloud Shell is fine). Optionally, a devops member can do the initial setup under temporary grants; the Org Owner removes the grants and any automatic seed project Owner binding afterward.
+- An **admin** (member of `gcp-admins`) runs OpenTofu and gcloud locally (Cloud Shell is fine). Optionally, a devops member can do the initial setup under temporary grants; an admin removes the grants afterward. The creator's automatic seed project Owner binding is removed by `seed_creator_principal`.
 - Start with local state, then migrate to GCS under `tfstate/0-bootstrap`. Use a git-ignored local `terraform.tfvars`; keep a private copy in `gs://<prefix>-iac-tfstate/tfvars/0-bootstrap/terraform.tfvars`. Stage 0 is not applied by the pipeline it creates.
-- After the GitHub org owner authorizes the App, enable the repository link, triggers and jobs. Stages 1–3 use **PR plan → devops review → merge to `main` → separate approver → apply**. Plans run without state locking as read-only SAs; after approval, the apply build plans again from `main` and applies that saved plan with normal locking.
+- After the GitHub org owner authorizes the App, enable the repository link, triggers and jobs. Stages 1–3 use **PR plan → code owner review (`iac-reviewers`) → merge to `main` → apply** (no approval step in GCP; R10). Plans run without state locking as read-only SAs; on merge, the apply build plans again from `main` and applies that saved plan with normal locking.
 - Plan/apply output stays in Cloud Logging. GitHub checks can expose status, the seed project ID in the check name, and build/trigger UUIDs, not plan text. External PRs require a repo writer's `/gcbrun` after review.
 - Scheduler starts `<key>-check` on `main` daily or on demand (including after a stage's first apply). Checks use the corresponding plan SA; any diff or error fails the build, and no check applies changes.
 
@@ -39,12 +39,11 @@ In b1, GitHub Team in a private repo can use **PR review** before merge as the g
 
 ## Permissions matrix
 
-Role IDs omit `roles/` except for the standalone Org Owner role shown as assigned.
+Role IDs omit `roles/`.
 
 | Who | Role | Scope | Why |
 |---|---|---|---|
-| Org Owners (at least two) | `roles/cloudowner.admin` (outside IAM); operator needs `resourcemanager.organizationAdmin`, `billing.admin`, and `iam.serviceAccountUser` on IaC SAs | Organization, billing account, IaC SAs respectively | Local stage 0; starts first applies once, still with independent approval; otherwise break-glass. |
-| Approvers group | `cloudbuild.builds.approver`, `cloudbuild.builds.viewer`, `logging.viewer` | Seed project only for builds | Inspect plans and approve builds, not edit IaC. Org Owner manages group membership. |
+| Admins group (`admin_principals`, `trigger_admin_principals`) | `resourcemanager.organizationAdmin`, `resourcemanager.projectCreator`; `owner`; `billing.admin`; `iam.serviceAccountUser` | Organization; seed project; billing account; IaC SAs, respectively | Local stage 0; starts the first applies once; otherwise break-glass. Org roles are granted by hand once in runbook 00 and then declared here. |
 | Billing group | `billing.viewer` | Billing account | Inspect costs; no budget or IAM writes. |
 | Devops group | `cloudbuild.builds.viewer`, `logging.viewer`, `cloudscheduler.jobRunner` | Seed project | Read plans and run known check jobs; no direct trigger runs or SA impersonation. Environment access is in [stage 2](../2-environments/README.md). |
 | `iac-org-plan` | `viewer`, `resourcemanager.folderViewer`, `iam.securityReviewer`, `orgpolicy.policyViewer`, `privilegedaccessmanager.viewer`; `billing.viewer`; `monitoring.viewer`, `serviceusage.serviceUsageConsumer` | Organization; billing account; seed project, respectively | Refresh stages 1–2, including folder metadata, budgets and alert channels. |
@@ -56,4 +55,4 @@ Role IDs omit `roles/` except for the standalone Org Owner role shown as assigne
 
 ## Related runbooks
 
-[Bootstrap (methods A/B)](../../runbooks/02-stage0-bootstrap.md) · [Connect GitHub and configure the pipeline](../../runbooks/03-cloud-ops-repo.md) · [First applies](../../runbooks/04-stages-via-pipeline.md) · [Manage approvers](../../runbooks/ops/change-approver.md) · [Run checks](../../runbooks/ops/run-checks.md)
+[Bootstrap (methods A/B)](../../runbooks/02-stage0-bootstrap.md) · [Connect GitHub and configure the pipeline](../../runbooks/03-cloud-ops-repo.md) · [First applies](../../runbooks/04-stages-via-pipeline.md) · [Manage PAM approvers](../../runbooks/ops/change-approver.md) · [Run checks](../../runbooks/ops/run-checks.md)

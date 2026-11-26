@@ -1,38 +1,37 @@
-# Add or Remove an Approver
+# Add or Remove a PAM Approver
 
-- **Who:** the Org Owner (the only owner of the approvers group).
-- **Account:** the Org Owner Google account, at <https://groups.google.com/>.
-- **Why a group:** the approver roles (`cloudbuild.builds.approver`, `cloudbuild.builds.viewer`,
-  `logging.viewer` on the seed project) are bound once to `<prefix>-gcp-approvers` in stage 0.
-  Changing people is a group membership change; stage 0 is not re-applied.
-- **Trade-off:** group membership changes are not in GCP audit logs; only Google Groups shows
-  them. Approvals themselves are in the seed project audit log (`ApproveBuild`).
+Approvers only approve prod `prod-operator` PAM requests (incident access). Infrastructure
+changes are approved in GitHub by the `iac-reviewers` team ([change-via-pr.md](change-via-pr.md)).
 
-## 1. Group settings (once, when the group is created)
+- **Who:** an admin (member of `gcp-admins`), in the Google Admin console (admin.google.com).
+- **Why a group:** the PAM entitlement names `group:gcp-approvers@<domain>` as approver and
+  gives it `resourcemanager.folderViewer` on the prod folder (stage 2). Changing people is a
+  group membership change; no apply is needed for the permission.
+- **Notifications:** group addresses receive no mail in this domain (spike S1), so PAM emails
+  go to the individual addresses in `pam_approver_emails` (stage 2 tfvars). Changing them is a
+  stage 2 PR.
 
-| Setting | Value |
-|---|---|
-| Name / email | `<prefix>-gcp-approvers` |
-| Who can join | Only invited users |
-| Who can view members | Group managers |
-| Owner | Org Owner only |
+An approver must not be in `gcp-devops` or `gcp-developers` (the person who requests prod
+access must not approve it; PAM also blocks self-approval).
 
-An approver must not be in the devops or developers groups (the person who writes or reviews
-a change must not release it).
+## 1. Add an approver
 
-## 2. Add an approver
+1. The person has a user account in `<domain>` with 2-Step Verification on.
+2. Admin console → Directory → Groups → `gcp-approvers` → **Add members** → the user → Add.
+3. Add the user's address to `pam_approver_emails`. Real values are not in the public repo,
+   so this is a tfvars-only change done by the admin: edit `stages/2-environments/terraform.tfvars`,
+   upload it and start `2-environments-apply` with `prepare` / `run_apply` from
+   [runbook 04](../04-stages-via-pipeline.md), then run `2-environments-check`
+   ([run-checks.md](run-checks.md)): expect No changes.
+4. Verify: the approver opens <https://console.cloud.google.com/iam-admin/pam/grants/approvals>
+   and can select the prod folder. IAM may take a few minutes.
+5. Give them [approve-pam-grant.md](approve-pam-grant.md).
 
-1. The new approver has a Google account with 2-Step Verification on.
-2. groups.google.com → `<prefix>-gcp-approvers` → **Members** → **Add members** → the
-   account → add directly (not invite) → **Add**.
-3. Verify: the new approver signs in (private window) → seed project → **Cloud Build** →
-   **History** (region `us-central1`) shows builds. IAM may take a few minutes.
-4. Give them [approve-apply.md](approve-apply.md).
+## 2. Remove an approver
 
-## 3. Remove an approver
-
-1. groups.google.com → `<prefix>-gcp-approvers` → **Members** → select → **Remove**.
-2. Verify: that account no longer sees Cloud Build **History** (allow a few minutes).
-3. Keep at least one approver, or no infra change can be applied.
+1. Admin console → Directory → Groups → `gcp-approvers` → select the member → **Remove**.
+2. Remove the address from `pam_approver_emails` (step 1.3 in reverse).
+3. Verify: the account can no longer select the prod folder on the approvals page.
+4. Keep at least one approver who is not in `gcp-devops`, or no prod elevation can be approved.
 
 Next: nothing.
