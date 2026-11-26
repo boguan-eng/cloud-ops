@@ -5,18 +5,18 @@ changes go through a PR ([change-via-pr.md](change-via-pr.md)). The access is ti
 and needs a second person.
 
 **Who / which account:**
-- **Requester:** a `devops` member, Google account in the devops group.
-- **Approver:** a member of the approvers group, Google account (Console only; never the requester).
-- **Org Owner:** break-glass only (nobody holds a standing revoke right; see step 6).
+- **Requester:** a `devops` member, user in `gcp-devops`.
+- **Approver:** a member of `gcp-approvers` (Console only; never the requester).
+- **Admin (Org Owner):** break-glass only (nobody holds a standing revoke right; see step 6).
 
 **Prerequisites:** stage 2 applied (entitlement `prod-operator` on the prod folder exists);
 variable `PROD_FOLDER_ID` (numeric folder ID, from the stage 2 output; never commit it);
 `gcloud` signed in as the requester.
 **Next:** [run-checks.md](run-checks.md) (step 7).
 
-**Known gap (T7-12):** no email reaches the approvers yet (consumer Google Groups; the
-notification topic is still open). The requester must tell an approver directly (chat) and
-send the grant ID.
+**Notifications:** PAM emails go to the individual addresses in `pam_approver_emails` (group
+addresses get no mail in this domain, spike S1). Until delivery is verified (spike S4), the
+requester also tells an approver directly (chat) and sends the grant ID.
 
 ## 1. Requester: request the grant
 

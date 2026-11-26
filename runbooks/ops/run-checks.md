@@ -46,10 +46,10 @@ FAILURE means an error or a diff. Console → seed project → **Cloud Build** �
 
 - **Start a trigger directly** (`gcloud builds triggers run <key>-check`): `PERMISSION_DENIED`.
   Starting a trigger needs actAs on the trigger's service account. A human with actAs on a plan
-  SA could run any build as it (org-wide read, state, tfvars), so no human gets it, except the Org
-  Owner.
+  SA could run any build as it (org-wide read, state, tfvars), so no human gets it, except the
+  admins group.
 - **List jobs** (`gcloud scheduler jobs list`): the devops role `roles/cloudscheduler.jobRunner`
   has `jobs.run`, not `jobs.get` / `jobs.list`. Run a job by its name; the four names are above.
-- **Start applies:** only a merge to `main` plus approval does
-  ([approve-apply.md](approve-apply.md)). The scheduler SA `iac-check-runner` can start builds, but
+- **Start applies:** only a merge to `main` after code owner review does
+  ([change-via-pr.md](change-via-pr.md)). The scheduler SA `iac-check-runner` can start builds, but
   can act as the two plan SAs only.

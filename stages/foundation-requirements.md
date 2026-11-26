@@ -4,6 +4,12 @@ Related (moved into `stages/`): `stages/2-environments/gcp-iam-bootstrap-*.md`, 
 Source of topics: personal GCP DevOps exam notes, lesson 1 (hierarchy, IAM, service accounts)
 and the bootstrap part of lesson 2 (IaC). Only practical items are in scope.
 
+> **Superseded in part (identity migration, 2026-11-25):** the organization moved to a Cloud
+> Identity domain; people act through Cloud Identity groups (no IAM on an individual), and
+> infrastructure changes are approved only by the GitHub code owner review (applies run on
+> merge; no Cloud Build approval, no approver roles on the seed project; approvers keep only
+> PAM). Where this document says otherwise, `stages/identity-migration-design.md` applies.
+
 ## Goal
 
 Turn the existing hand-applied setup into a foundation that works the way a real small team

@@ -15,9 +15,9 @@ Placeholders: `<ORG>` = GitHub org name. Never commit real values.
 | Who creates repos | **Owners only** | New repos are onboarded to GCP through a `cloud-ops` PR anyway; prevents ad-hoc public repos leaking data |
 | Visibility change, delete, transfer | Owners only | Prevents accidental publication or deletion |
 | Base permissions | **No permission** | All access is granted through teams |
-| `cloud-ops` access | `devops` = **Write**; `developers` = none (public, readable anyway); owners = Admin | Infra changes only by devops via PR + branch protection |
+| `cloud-ops` access | `devops` = **Write**; `iac-reviewers` = **Write** (code owner); `developers` = none (public, readable anyway); owners = Admin | Infra changes only via PR; the code owner review releases the apply |
 | App repo access | `developers` = **Write**, `devops` = **Maintain** | See `stages/3-cicd/ar/RUNBOOK.md` |
-| Non-technical approver | No GitHub access | Approves infra applies in the GCP Console |
+| PAM approver | No GitHub access | Approves prod incident access (PAM) in the GCP Console; infra changes are approved in GitHub |
 | Cloud Build GitHub App | Installed by an owner, **only on `cloud-ops`** (runbook 03) | Limits what the stored OAuth token can reach |
 
 Repos are **public**: on GitHub Free, rulesets/branch protection and Environments (required
@@ -48,7 +48,10 @@ Org → **Settings**:
 
 Org → **Teams** → **New team** (the create page has no member field):
 - `developers`: app developers.
-- `devops`: operators; `prod` environment reviewers; the only team that writes `cloud-ops`.
+- `devops`: operators; `prod` environment reviewers; authors of `cloud-ops` changes.
+- `iac-reviewers`: code owners of `/stages/` and `/.github/` in `cloud-ops` (`.github/CODEOWNERS`);
+  their approval releases infrastructure applies. Needs at least one member who is not the
+  usual author (GitHub forbids approving your own PR); visibility **Visible**.
 
 Add members: team page → **Members** tab → **Add a member** → username → Enter →
 **Add `<user>` to `<team>`**.
@@ -65,7 +68,7 @@ curl -s https://api.github.com/orgs/<ORG> | jq .id
 ## Verification
 
 - Org → Settings → Authentication security shows 2FA required.
-- Org → People: 2 owners. Teams `devops` and `developers` exist with members.
+- Org → People: 2 owners. Teams `devops`, `iac-reviewers` and `developers` exist with members.
 - A member (non-owner) sees no **New** button for repositories.
 
 **Next:** [02-stage0-bootstrap.md](02-stage0-bootstrap.md).
