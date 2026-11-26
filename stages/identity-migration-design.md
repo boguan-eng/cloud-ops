@@ -39,6 +39,33 @@ the chat; this file uses placeholders. Done so far: `<domain>` registered at Clo
 
 Super admin itself is a Cloud Identity role on 2 accounts (Google requires accounts; R3/D6).
 
+### 2.1 Access layers and group granularity (user decision 2026-11-25)
+
+| Layer | Decides | Where |
+|---|---|---|
+| Change | Who may get GCP resources created or changed: author a PR, approve which paths | GitHub teams + CODEOWNERS |
+| Direct access | Who still acts in GCP as a person: bootstrap, break-glass, read, incident, billing | Cloud Identity groups |
+
+Org, folders and projects are created by pipeline SAs after merge (stage 0 is the only human
+apply, by the Org Owner). So groups follow the direct-access duties, not resource ownership:
+
+| Group | Direct duty in GCP |
+|---|---|
+| `gcp-admins` | Bootstrap, break-glass, Org Owner |
+| `gcp-billing` | Billing account admin (same members as admins now; separate duty, may move to finance) |
+| `gcp-devops` | Read config and logs; PAM request for prod in incidents |
+| `gcp-approvers` | PAM approval only (requester cannot self-approve) |
+| `gcp-developers` | Read nonprod resources and logs |
+
+Rules:
+- Granularity = duty × scope, not department. Add a group only for a distinct permission set.
+  Leads who approve are members of a duty group, not a group of their own. With several
+  products: `gcp-<product>-<duty>`.
+- Repos: one platform repo with CODEOWNERS path ownership (apps already have their own repos).
+  Split a product's infra into its own repo (own SA and state) only when a separate team must
+  not approve the platform's changes. The security boundary is each pipeline SA's permissions.
+- GitHub teams and Cloud Identity groups are maintained separately (no sync assumed).
+
 ## 3. Approval only in GitHub (R10)
 
 | Change | Where |
