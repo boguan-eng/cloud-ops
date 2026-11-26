@@ -9,7 +9,4 @@ wif_pool = {
   prod    = "projects/987654321/locations/global/workloadIdentityPools/github"
 }
 
-# GitHub repo name => numeric repo ID
-repos = {
-  demo-api = "111111111"
-}
+# repos is set in variables.tf (via PR), not here.

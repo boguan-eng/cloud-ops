@@ -127,7 +127,8 @@ run_check 3-cicd-wif; sleep 240; check_result 3-cicd-wif   # require SUCCESS
 ## 4. Stage 3 — Artifact Registry
 
 `3-cicd/ar/terraform.tfvars`: project IDs as above, `region`, `wif_pool` (from
-`cd 3-cicd/wif && tofu output wif_pool`), `repos` (GitHub repo name → numeric repo ID).
+`cd 3-cicd/wif && tofu output wif_pool`). The app repos (`repos`) are in `3-cicd/ar/variables.tf`,
+changed by PR.
 
 ```bash
 prepare 3-cicd/ar 3-cicd-ar     # expect per repo: 2 repos + 2 writer + 1 prod-reads-nonprod, plus 2 APIs

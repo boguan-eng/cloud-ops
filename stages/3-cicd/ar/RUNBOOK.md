@@ -1,44 +1,15 @@
-# GitHub CI → Artifact Registry — Runbook (devops)
+# GitHub CI → Artifact Registry — Runbook
 
 Per-repo setup so a GitHub repo's Actions can push images to nonprod AR (on `main`) and
-promote them to prod AR (on `v*` tags). Prerequisites: GitHub org (`runbooks/01-github-org.md`)
-and WIF pools (`stages/3-cicd/wif/RUNBOOK.md`, outputs handed over by the admin).
+promote them to prod AR (on `v*` tags). The AR repos and their IAM are stage `3-cicd/ar`,
+applied by the pipeline (first build: `runbooks/04-stages-via-pipeline.md` section 4; later
+changes: `runbooks/ops/change-via-pr.md`). Nobody runs `tofu apply` for it locally.
 
 Never write real values into tracked files. Session variables only:
 
 ```bash
-export DEVOPS_ACCOUNT=...    # devops group member gcloud account
-export NONPROD_PROJECT=...   # nonprod project ID
-export STATE_BUCKET=...      # GCS bucket for tofu state (globally unique)
 export ORG=...               # GitHub org name
 export REPO=...              # GitHub repo name (also the AR repository ID)
-```
-
-Authentication: no ADC file. tofu (incl. the `gcs` backend, which reads
-`GOOGLE_OAUTH_ACCESS_TOKEN`) uses a short-lived token (about 1 hour; re-export on 401).
-
-## 1. State bucket (one time)
-
-```bash
-gcloud storage buckets create "gs://$STATE_BUCKET" \
-  --project="$NONPROD_PROJECT" --location=us-central1 \
-  --uniform-bucket-level-access --public-access-prevention \
-  --account="$DEVOPS_ACCOUNT"
-gcloud storage buckets update "gs://$STATE_BUCKET" --versioning --account="$DEVOPS_ACCOUNT"
-```
-
-## 2. First apply
-
-```bash
-cd stages/3-cicd/ar
-cp backend.hcl.example backend.hcl             # bucket = "$STATE_BUCKET"; git-ignored
-cp terraform.tfvars.example terraform.tfvars   # projects, wif_pool (from admin), repos; git-ignored
-export GOOGLE_OAUTH_ACCESS_TOKEN=$(gcloud auth print-access-token --account="$DEVOPS_ACCOUNT")
-tofu init -backend-config=backend.hcl
-tofu plan
-tofu apply
-tofu output ar_repo_path
-unset GOOGLE_OAUTH_ACCESS_TOKEN
 ```
 
 ## 3. Onboard a repo
@@ -51,19 +22,17 @@ Order matters: Environments + secrets must exist before the first push to `main`
 1. Create `<REPO>` in `<ORG>`: **Public**, empty for a new app.
 2. Repo → Settings → Collaborators and teams: `developers` = **Write**, `devops` = **Maintain**.
 
-### 3.2 GCP (devops)
+### 3.2 GCP (devops, by PR)
 
 ```bash
 curl -s "https://api.github.com/repos/$ORG/$REPO" | jq .id    # numeric repo ID
 ```
 
-Add `<repo> = "<repo_id>"` to `repos` in `terraform.tfvars`, then with the devops token:
-
-```bash
-tofu plan     # expect only creates: 2 AR repos + 3 IAM members per new repo
-tofu apply
-tofu output ar_repo_path
-```
+Add `<repo> = "<repo_id>"` to the `repos` default in `stages/3-cicd/ar/variables.tf` and open a
+PR (`Expected plan: 5 to add` per new repo: 2 AR repos + 3 IAM members). After review and
+merge, the `3-cicd-ar-apply` build applies it. Its log (seed project → Cloud Build → History)
+ends with the outputs; take `ar_repo_path` from there and hand it to the repo admin privately
+(it contains project IDs).
 
 ### 3.3 GitHub Environments + secrets (repo admin)
 
@@ -72,7 +41,7 @@ tofu output ar_repo_path
 | `nonprod` | Branch `main` | — | `GCP_WIF_PROVIDER` = `wif_provider.nonprod`; `GCP_AR_REPO` = `ar_repo_path.nonprod.<REPO>` |
 | `prod` | Tag `v*` | Required reviewers `devops`; *Prevent self-review* off if only one reviewer; *Allow administrators to bypass* off | `GCP_WIF_PROVIDER` = `wif_provider.prod`; `GCP_AR_REPO` = `ar_repo_path.prod.<REPO>`; `GCP_AR_REPO_SOURCE` = `ar_repo_path.nonprod.<REPO>` |
 
-`wif_provider` comes from the admin (`github-ci-wif`), `ar_repo_path` from step 3.2.
+`wif_provider` comes from the `3-cicd-wif-apply` build log, `ar_repo_path` from step 3.2.
 Use **Environment secrets** only (masked in public logs; readable only by that environment's jobs).
 
 UI (repo must be public on Free; requires repo admin):
