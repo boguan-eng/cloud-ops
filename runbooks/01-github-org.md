@@ -1,7 +1,7 @@
 # 01 — GitHub Organization
 
 **Who:** the company owner, signed in to GitHub (becomes the GitHub org **Owner**).
-**Prerequisites:** none. **Next:** [02-stage0-bootstrap.md](02-stage0-bootstrap.md).
+**Prerequisites:** [00-identity.md](00-identity.md). **Next:** [02-stage0-bootstrap.md](02-stage0-bootstrap.md).
 
 Placeholders: `<ORG>` = GitHub org name. Never commit real values.
 
@@ -9,10 +9,10 @@ Placeholders: `<ORG>` = GitHub org name. Never commit real values.
 
 | Item | Setting | Why |
 |---|---|---|
-| Who creates the org | The company owner (same person as the GCP Org Owner) → GitHub org **Owner** | Highest privilege stays with the accountable person; not used day to day |
+| Who creates the org | The company owner (same person as GCP super admin `admin1`) → GitHub org **Owner** | Highest privilege stays with the accountable person; not used day to day |
 | Number of org owners | 2 (owner + backup) | A single lost owner account makes the org unrecoverable |
 | Owners vs authors | Accounts that author `cloud-ops` PRs (devops) are **members, not owners** | Org owners are the ruleset's only bypass actors; an author who is an owner could merge without review |
-| Two-factor authentication | **Required** for all members | Available on Free. GCP without a domain cannot enforce 2SV; GitHub can |
+| Two-factor authentication | **Required** for all members | Available on Free. Cloud Identity enforces 2SV for the GCP accounts separately |
 | Who creates repos | **Owners only** | New repos are onboarded to GCP through a `cloud-ops` PR anyway; prevents ad-hoc public repos leaking data |
 | Visibility change, delete, transfer | Owners only | Prevents accidental publication or deletion |
 | Base permissions | **No permission** | All access is granted through teams |
