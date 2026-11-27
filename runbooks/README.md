@@ -29,6 +29,7 @@ tfvars-only changes and break-glass. Day-to-day runbooks:
 |---|---|---|
 | [ops/change-via-pr.md](ops/change-via-pr.md) | devops (author) + `iac-reviewers` (reviewer) | Branch, PR, code owner review (Org Owner emergency bypass only), merge → apply |
 | [ops/change-approver.md](ops/change-approver.md) | admin | Add or remove PAM approvers |
+| [ops/change-person.md](ops/change-person.md) | admin (+ GitHub Owner, Cloudflare admin) | Join, leave, role change; handover order |
 | [ops/run-checks.md](ops/run-checks.md) | devops (or admin) | Daily/on-demand `<stage>-check` for drift and plan-SA read coverage |
 | [ops/approve-pam-grant.md](ops/approve-pam-grant.md) | devops (requester) + approver | Incident-only prod write elevation (PAM), then reconcile by PR |
 
