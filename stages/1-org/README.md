@@ -13,7 +13,7 @@
 
 - Devops opens a PR; Cloud Build plans as `iac-org-plan`. After code owner review and merge to `main`, `iac-org-apply` plans again and applies. Logs stay in GCP. On a from-zero setup an admin starts the first apply trigger once.
 - State key: `tfstate/1-org`. Cloud Build fetches `terraform.tfvars` from `gs://<prefix>-iac-tfstate/tfvars/1-org/`. The seed project hosts the alert channel and is the Budget API quota project.
-- Run `1-org-check` after the first apply and use the daily/on-demand check for drift and plan read coverage. Budget email delivery to the consumer group is unverified (T7-12); billing viewers use the Console in the meantime.
+- Run `1-org-check` after the first apply and use the daily/on-demand check for drift and plan read coverage. Budget alerts go to one individual address (`billing_alert_email`; group addresses receive no mail, S1); delivery to user addresses is verified.
 
 ## Practical value
 
@@ -25,8 +25,8 @@ One policy baseline protects even new projects; imports make changes to existing
 |---|---|---|---|
 | GCP Organization Policy | Included in IAM with no additional cost per user or identity [IAM pricing](https://cloud.google.com/products/iam) (read 2026-11-25). Separate price: not stated by the vendor (checked 2026-11-25) ([Organization Policy](https://docs.cloud.google.com/organization-policy/overview)). | Review constraints and keep exceptions at project scope. | Chosen: native hierarchy enforcement rather than relying on reviewers to catch every unsafe setting. |
 | Cloud Billing budgets + Monitoring email channel | Budgets and alerts have no additional charge [Cost Management](https://cloud.google.com/cost-management) (read 2026-11-25). Separate email channel price: not stated by the vendor (checked 2026-11-25) ([budget docs](https://docs.cloud.google.com/billing/docs/how-to/budgets), [Monitoring pricing](https://cloud.google.com/products/observability/pricing)). | Tune thresholds and verify delivery. | Chosen: account-wide cost visibility without a separate cost tool. |
-| Consumer Google Groups | not stated by the vendor (checked 2026-11-25) | Maintain membership outside GCP; no GCP audit log for membership changes. | Current: works without a domain, but notification and domain-policy limitations remain. |
-| Cloud Identity Free | No charge; initial 50-user cap for a new tenant starting at zero [editions](https://docs.cloud.google.com/identity/docs/editions) (read 2026-11-25) and [licensing](https://docs.cloud.google.com/identity/docs/how-to/how-licensing-works-for-cloud-identity) (read 2026-11-25). | Verify a domain, manage the directory and plan migration. | Adopt when a domain exists. See [identity options](identity-options.md) for the trade-offs and external IdPs. |
+| Consumer Google Groups | not stated by the vendor (checked 2026-11-25) | Maintain membership outside GCP; no GCP audit log for membership changes. | Previous (until 2026-11-27): works without a domain, but notification and domain-policy limitations remain. |
+| Cloud Identity Free | No charge; initial 50-user cap for a new tenant starting at zero [editions](https://docs.cloud.google.com/identity/docs/editions) (read 2026-11-25) and [licensing](https://docs.cloud.google.com/identity/docs/how-to/how-licensing-works-for-cloud-identity) (read 2026-11-25). | Verify a domain, manage the directory and plan migration. | Chosen 2026-11-27 (identity migration). See [identity options](identity-options.md) for the trade-offs and external IdPs. |
 
 ## Permissions matrix
 

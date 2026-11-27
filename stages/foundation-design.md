@@ -154,6 +154,9 @@ grant in the Console ("You need additional access to the folder"). Fix in stage 
 when a grant becomes active), approvers group → `resourcemanager.folderViewer` on the prod
 folder (folder metadata only; Console chosen over CLI-only approval for usability). Normal path:
 request → email to approvers → link → approve in the Console (`runbooks/ops/approve-pam-grant.md`).
+Updated 2026-11-27 (identity migration): group addresses receive no mail (S1), so both
+recipient lists are individual addresses (`pam_approver_emails`, `pam_admin_emails`); approval
+still uses the approvers group. Delivery verified (S4).
 
 Acceptance 5 uses `selfuse-operator` (devops) with a PAM grant, ended early by revoke.
 Acceptance 6 uses the approver account temporarily added to the developers group (removed

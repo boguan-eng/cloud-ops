@@ -82,6 +82,12 @@ The old org is deleted first (phase 0), so no PR or merge runs against it. While
 exists, the ruleset keeps 1 approval but has no required checks (phase 0 step 1); the new
 `<key>-plan` checks are added back in phase 3 step 5.
 
+Accepted exception (2026-11-27): **tfvars-only changes** (real values such as notification
+addresses, which cannot be in the public repo) are uploaded and applied by an admin
+(`prepare` / `run_apply`) without a PR review. Only `gcp-admins` (Org Owners, the break-glass
+tier) can do this; the apply log stays in GCP and the next `<key>-check` shows any drift. A
+review mechanism for private values would cost more than this risk.
+
 ## 4. Phases and steps
 
 ### Phase 0 — Delete the old setup first (user decision 2026-11-25)
