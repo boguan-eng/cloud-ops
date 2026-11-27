@@ -43,6 +43,8 @@ ends with the outputs; take `ar_repo_path` from there and hand it to the repo ad
 
 `wif_provider` comes from the `3-cicd-wif-apply` build log, `ar_repo_path` from step 3.2.
 Use **Environment secrets** only (masked in public logs; readable only by that environment's jobs).
+Paste values without leading/trailing spaces or newlines: a stored secret cannot be viewed, and a
+stray space shows up only as `invalid reference format` in the build step.
 
 UI (repo must be public on Free; requires repo admin):
 1. `https://github.com/<ORG>/<REPO>/settings/environments` → **New environment** → name →

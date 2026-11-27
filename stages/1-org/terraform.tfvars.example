@@ -10,7 +10,7 @@ allowed_contact_domains            = ["@example.com"]
 # Budget (budget.tf)
 billing_account     = "AAAAAA-BBBBBB-CCCCCC"
 seed_project_id     = "acme-seed-0000"
-budget_amount       = 4000 # whole units of budget_currency
+budget_amount       = 4000 # whole units of budget_currency (default TWD; must match the billing account currency)
 billing_alert_email = "billing-person@example.com"
 
 # ---------------------------------------------------------------------------

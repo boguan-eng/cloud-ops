@@ -40,7 +40,7 @@ prepare() {  # $1=<dir> $2=<key>: upload tfvars, local read-only plan
   (cd "$1" && printf 'bucket = "%s"\n' "$STATE_BUCKET" > backend.hcl \
     && gcloud storage cp terraform.tfvars "gs://${STATE_BUCKET}/tfvars/$2/terraform.tfvars" \
     && tofu init -input=false -reconfigure -backend-config=backend.hcl \
-    && tofu plan -input=false -lock=false | tail -1)
+    && tofu plan -input=false -lock=false -no-color | grep -E '^(Plan:|No changes)')
 }
 run_apply() {  # $1=<key>: start the apply trigger on main (no approval step)
   gcloud builds triggers run "$1-apply" --branch=main \
@@ -77,7 +77,9 @@ build log in the Console (seed project → Cloud Build → History → `<key>-ch
 `allowed_contact_domains` (the live values: `gcloud org-policies describe
 iam.allowedPolicyMemberDomains --organization=$ORG_ID` and `...
 essentialcontacts.managed.allowedContactDomains`), `billing_account`, `seed_project_id`,
-`budget_amount`, `billing_alert_email` (a user address; group addresses get no mail) (see
+`budget_amount` (in the billing account currency: `gcloud billing accounts describe
+$BILLING_ACCOUNT --format='value(currencyCode)'`; set `budget_currency` if it is not TWD),
+`billing_alert_email` (a user address; group addresses get no mail) (see
 `stages/1-org/terraform.tfvars.example`).
 
 ```bash
