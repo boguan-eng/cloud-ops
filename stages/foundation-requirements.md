@@ -24,6 +24,9 @@ concepts, trade-offs (GCP vs third-party, price, maintenance) and permission mat
   domain, no directory customer ID. Ref: Resource Manager "Set up standalone organizations".
 - Organization Owner (`roles/cloudowner.admin`) is managed outside IAM (Organization details page).
 - Members use personal Google accounts; groups are consumer Google Groups.
+- **Updated 2026-11-27 (identity migration):** the org now belongs to a verified domain with
+  Cloud Identity Free; users and groups are Cloud Identity accounts and groups. The two points
+  above describe the first build. See [identity-migration-requirements.md](identity-migration-requirements.md).
 - `cloud-ops` is a **public** repo: no environment values (org/project IDs, numbers, emails,
   billing account) are committed; plan/apply output must not appear in public logs.
 - GitHub org is on the Free plan. Fact (GitHub docs, 2026-11-24): on Free/Pro/Team, environment
