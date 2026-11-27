@@ -15,8 +15,9 @@ variable `PROD_FOLDER_ID` (numeric folder ID, from the stage 2 output; never com
 **Next:** [run-checks.md](run-checks.md) (step 7).
 
 **Notifications:** PAM emails go to the individual addresses in `pam_approver_emails` (group
-addresses get no mail in this domain, spike S1). Until delivery is verified (spike S4), the
-requester also tells an approver directly (chat) and sends the grant ID.
+addresses get no mail in this domain, spike S1). Delivery to the approver was verified (S4,
+2026-11-27); the requester still tells an approver directly (step 2), so an unexpected request
+stands out.
 
 ## 1. Requester: request the grant
 
@@ -39,9 +40,11 @@ Tell an approver (chat or phone): "PAM request `<GRANT_ID>`, prod folder, `<dura
 
 ## 3. Approver: approve in the Console
 
-1. Open <https://console.cloud.google.com/iam-admin/pam/grants/approvals> with the approver account.
+1. With the approver account, open the review link in the PAM email (it selects the prod folder),
+   or <https://console.cloud.google.com/iam-admin/pam/grants/approvals>.
 2. In the resource picker select the **prod folder** (approvers have
    `resourcemanager.folderViewer` there; without it the page says "You need additional access").
+   With another resource selected (the org or a project) the list is simply empty.
 3. Open the request, check that the requester and justification match what you were told
    (a request you were not told about: **Deny**), then **Approve** with a justification.
 
