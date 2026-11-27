@@ -166,6 +166,17 @@ gcloud organizations remove-iam-policy-binding $ORG --configuration=<cfg-admin1>
 
 Verify: org IAM has no `user:` or `domain:` member; `admin1` still reads org IAM (through the
 group).
+6. After step 4: remove the billing administrator outside `<domain>` (R4: no individual
+   holds billing access). The payment method and invoices are managed separately in the
+   payments profile and are not changed by this.
+
+```bash
+gcloud billing accounts remove-iam-policy-binding <BILLING_ACCOUNT_ID> --configuration=<cfg-admin1> \
+  --member="user:<outside-admin>" --role=roles/billing.admin
+```
+
+Verify: billing account IAM has no `user:` member; `admin1` still reads it (through the group);
+`gcloud billing accounts list` as the outside account no longer shows it (allow ~1 min).
 
 ## 6. Group mail (spike S1)
 
