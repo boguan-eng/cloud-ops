@@ -107,8 +107,10 @@ cloud-ops/
    roles except Org Owners.
 2. A PR to `cloud-ops` produces a plan in GCP only. GitHub shows no plan/log content, org ID,
    billing account, project number or email. Accepted exception (2026-11-24): Cloud Build names
-   its GitHub checks `<trigger> (<seed project ID>)`, so the seed project ID and trigger/build
-   UUIDs are public (not configurable; the ID's prefix equals the public GitHub org name).
+   its GitHub checks `<trigger> (<seed project ID>)` and links them with `?project=<seed project
+   number>`, so the seed project ID, its number and trigger/build UUIDs are public (not
+   configurable). The prefix must therefore be a value that may be public (updated 2026-11-26:
+   identifiers only; access still needs IAM, and the state bucket blocks public access).
    Every PR is checked for anything beyond this (`runbooks/ops/change-via-pr.md`).
 3. Merge to `main` does not apply until an approver approves; approval is in audit logs.
 4. Restructure and state migration: `tofu plan` shows 0 changes before and after for every stage.

@@ -19,7 +19,8 @@ Never commit real values (`terraform.tfvars`, `backend.hcl` are git-ignored).
 ```bash
 export ORG_ID="123456789012"                  # gcloud organizations list
 export BILLING_ACCOUNT="000000-000000-000000" # gcloud billing accounts list
-export PREFIX="acme"                          # project IDs are globally unique; a deleted ID is never reusable
+export PREFIX="acme"                          # project IDs are globally unique; a deleted ID is never reusable;
+                                              # PUBLIC: GitHub check names show the seed project ID
 export REGION="us-central1"
 export SEED_PROJECT="${PREFIX}-iac-seed"      # add a suffix only if the ID is taken
 export STATE_BUCKET="${PREFIX}-iac-tfstate"   # globally unique
